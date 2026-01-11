@@ -181,3 +181,4 @@ class Verify(Resource):
             return {'error': 'Token无效'}, 401
         
         return {'valid': True, 'user_id': user_id}
+
