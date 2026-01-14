@@ -115,15 +115,47 @@ start_backend() {
         python3 -m venv venv
     fi
     
-    # 激活虚拟环境
-    source venv/bin/activate
+    # 检查依赖是否已安装（验证Flask是否能导入）
+    DEPENDENCIES_INSTALLED=false
+    if [ -f "venv/.dependencies_installed" ]; then
+        if "$BACKEND_DIR/venv/bin/python" -c "import flask" 2>/dev/null; then
+            DEPENDENCIES_INSTALLED=true
+        else
+            print_message "$YELLOW" "检测到依赖未正确安装，将重新安装..."
+            rm -f "venv/.dependencies_installed"
+        fi
+    fi
     
-    # 安装依赖
-    if [ ! -f "venv/.dependencies_installed" ]; then
+    # 安装依赖（使用虚拟环境中的pip）
+    if [ "$DEPENDENCIES_INSTALLED" = false ]; then
         print_message "$YELLOW" "安装Python依赖..."
-        pip install --upgrade pip > /dev/null 2>&1
-        pip install -r requirements.txt > /dev/null 2>&1
-        touch venv/.dependencies_installed
+        
+        # 升级pip（显示错误）
+        if ! "$BACKEND_DIR/venv/bin/pip" install --upgrade pip 2>&1; then
+            print_message "$RED" "✗ pip升级失败"
+            return 1
+        fi
+        
+        # 安装依赖（显示错误）
+        INSTALL_LOG="$LOG_DIR/pip_install.log"
+        if ! "$BACKEND_DIR/venv/bin/pip" install -r requirements.txt > "$INSTALL_LOG" 2>&1; then
+            print_message "$RED" "✗ 依赖安装失败"
+            print_message "$YELLOW" "错误日志已保存到: $INSTALL_LOG"
+            print_message "$YELLOW" "最后几行错误信息:"
+            tail -20 "$INSTALL_LOG" | sed 's/^/  /'
+            return 1
+        fi
+        
+        # 验证安装是否成功
+        if "$BACKEND_DIR/venv/bin/python" -c "import flask" 2>/dev/null; then
+            touch "$BACKEND_DIR/venv/.dependencies_installed"
+            print_message "$GREEN" "✓ 依赖安装成功"
+        else
+            print_message "$RED" "✗ 依赖安装后验证失败，请检查 requirements.txt"
+            return 1
+        fi
+    else
+        print_message "$GREEN" "✓ 依赖已安装"
     fi
     
     # 检查环境变量文件
@@ -139,19 +171,36 @@ OLLAMA_BASE_URL=http://localhost:11434
 EOF
     fi
     
-    # 启动Flask应用
+    # 启动Flask应用（使用虚拟环境中的Python）
     print_message "$GREEN" "后端服务启动中 (http://localhost:5000)..."
-    nohup python app.py > "$BACKEND_LOG" 2>&1 &
+    nohup "$BACKEND_DIR/venv/bin/python" app.py > "$BACKEND_LOG" 2>&1 &
     BACKEND_PID=$!
     echo $BACKEND_PID >> "$PID_FILE"
     
-    # 等待后端启动
+    # 等待后端启动，检查进程和端口
     sleep 3
     if ps -p $BACKEND_PID > /dev/null 2>&1; then
-        print_message "$GREEN" "✓ 后端服务已启动 (PID: $BACKEND_PID)"
-        return 0
+        # 检查端口是否在监听
+        for i in {1..10}; do
+            if lsof -Pi :5000 -sTCP:LISTEN -t >/dev/null 2>&1; then
+                print_message "$GREEN" "✓ 后端服务已启动 (PID: $BACKEND_PID)"
+                return 0
+            fi
+            sleep 1
+        done
+        # 进程存在但端口未监听，可能启动中或出错
+        if ps -p $BACKEND_PID > /dev/null 2>&1; then
+            print_message "$YELLOW" "⚠ 后端进程运行中，但端口5000未监听（可能正在启动或数据库连接失败）"
+            print_message "$BLUE" "请查看日志: $BACKEND_LOG"
+            return 0
+        else
+            print_message "$RED" "✗ 后端服务启动失败，请查看日志: $BACKEND_LOG"
+            tail -20 "$BACKEND_LOG" | sed 's/^/  /'
+            return 1
+        fi
     else
         print_message "$RED" "✗ 后端服务启动失败，请查看日志: $BACKEND_LOG"
+        tail -20 "$BACKEND_LOG" | sed 's/^/  /'
         return 1
     fi
 }
@@ -164,8 +213,13 @@ start_frontend() {
     
     # 检查是否有package.json
     if [ ! -f "package.json" ]; then
-        print_message "$YELLOW" "⚠ 未找到package.json，跳过前端启动"
-        print_message "$YELLOW" "如需启动前端，请先初始化React项目"
+        print_message "$YELLOW" "⚠ 未找到package.json，前端项目未初始化"
+        print_message "$BLUE" "前端目录存在但未初始化React项目"
+        print_message "$BLUE" "如需初始化前端项目，可以运行:"
+        print_message "$BLUE" "  cd frontend && npx create-react-app . --template typescript"
+        print_message "$BLUE" "  或者使用 Vite:"
+        print_message "$BLUE" "  cd frontend && npm create vite@latest . -- --template react-ts"
+        echo ""
         return 0
     fi
     

@@ -5,7 +5,16 @@ from flask_cors import CORS
 from flask_mail import Mail
 from flask_restx import Api
 from config.config import config
+from sqlalchemy.exc import OperationalError
 import os
+import logging
+
+# 配置日志
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # 初始化扩展
 db = SQLAlchemy()
@@ -49,17 +58,37 @@ def create_app(config_name=None):
     
     api.init_app(app)
     
-    # 创建数据库表
+    # 创建数据库表（带错误处理）
     with app.app_context():
-        db.create_all()
-        
-        # 创建默认管理员用户
-        from models.user import User
-        User.create_admin()
-        
-        # 创建默认数据源
-        from models.data_source import DataSource
-        create_default_data_sources()
+        try:
+            # 测试数据库连接
+            db.engine.connect()
+            db.create_all()
+            
+            # 创建默认管理员用户
+            try:
+                from models.user import User
+                User.create_admin()
+            except Exception as e:
+                logger.warning(f"创建默认管理员用户失败: {e}")
+            
+            # 创建默认数据源
+            try:
+                from models.data_source import DataSource
+                create_default_data_sources()
+            except Exception as e:
+                logger.warning(f"创建默认数据源失败: {e}")
+                
+        except OperationalError as e:
+            logger.error(f"数据库连接失败: {e}")
+            logger.warning("应用将继续启动，但数据库相关功能可能不可用")
+            logger.warning("请检查:")
+            logger.warning("  1. MySQL服务是否运行")
+            logger.warning("  2. 数据库配置是否正确 (检查 .env 文件中的 DATABASE_URL)")
+            logger.warning("  3. 数据库用户权限是否正确")
+        except Exception as e:
+            logger.error(f"数据库初始化失败: {e}")
+            logger.warning("应用将继续启动，但数据库相关功能可能不可用")
     
     # 注册错误处理器
     register_error_handlers(app)
@@ -122,7 +151,10 @@ def register_error_handlers(app):
     
     @app.errorhandler(500)
     def internal_error(error):
-        db.session.rollback()
+        try:
+            db.session.rollback()
+        except Exception:
+            pass  # 如果数据库不可用，忽略回滚错误
         return jsonify({'error': 'Internal Server Error', 'message': 'An unexpected error occurred'}), 500
 
 if __name__ == '__main__':
