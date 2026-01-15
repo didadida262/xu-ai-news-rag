@@ -30,7 +30,12 @@ api.interceptors.response.use(
       localStorage.removeItem('token')
       window.location.href = '/login'
     }
-    return Promise.reject(error.response?.data || error.message)
+    // 返回错误信息，优先使用response.data中的error字段
+    const errorData = error.response?.data || {}
+    return Promise.reject({
+      error: errorData.error || errorData.message || error.message || '请求失败',
+      status: error.response?.status
+    })
   }
 )
 

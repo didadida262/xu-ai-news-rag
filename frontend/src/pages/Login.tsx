@@ -20,7 +20,10 @@ export default function Login() {
       await login(username, password)
       navigate('/')
     } catch (err: any) {
-      setError(err.error || err.message || '登录失败')
+      // 显示错误信息
+      const errorMsg = err?.error || err?.message || '登录失败'
+      setError(errorMsg)
+      console.error('登录错误:', err)
     } finally {
       setLoading(false)
     }

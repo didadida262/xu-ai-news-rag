@@ -12,27 +12,8 @@ if backend_dir not in sys.path:
 
 from models.data_source import DataSource
 from models.user import User
+from models.database import db
 from services.tasks import fetch_data_source
-
-# 从 app.py 导入 db（通过 sys.modules 绕过 app 目录的冲突）
-try:
-    import sys as sys_module
-    # 如果 app.py 已经被执行，db 会在 sys.modules 中
-    if 'app' in sys_module.modules and hasattr(sys_module.modules['app'], 'db'):
-        db = sys_module.modules['app'].db
-    else:
-        # 否则直接导入 app.py 模块（需要重命名避免冲突）
-        import importlib.util
-        app_py_path = os.path.join(backend_dir, 'app.py')
-        spec = importlib.util.spec_from_file_location("app_py_module", app_py_path)
-        app_py_module = importlib.util.module_from_spec(spec)
-        sys_module.modules['app_py_module'] = app_py_module
-        spec.loader.exec_module(app_py_module)
-        db = app_py_module.db
-except Exception:
-    # 如果导入失败，尝试从 flask_sqlalchemy 导入（延迟导入）
-    from flask_sqlalchemy import SQLAlchemy
-    db = SQLAlchemy()
 
 data_sources_ns = Namespace('data-sources', description='数据源管理相关操作')
 

@@ -11,26 +11,7 @@ if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
 from models.user import User
-# 从 app.py 导入 db（通过 sys.modules 绕过 app 目录的冲突）
-# 注意：这里假设 app.py 已经被执行，db 已经在 sys.modules['app'] 中
-try:
-    import sys as sys_module
-    # 如果 app.py 已经被执行，db 会在 sys.modules 中
-    if 'app' in sys_module.modules and hasattr(sys_module.modules['app'], 'db'):
-        db = sys_module.modules['app'].db
-    else:
-        # 否则直接导入 app.py 模块（需要重命名避免冲突）
-        import importlib.util
-        app_py_path = os.path.join(backend_dir, 'app.py')
-        spec = importlib.util.spec_from_file_location("app_py_module", app_py_path)
-        app_py_module = importlib.util.module_from_spec(spec)
-        sys_module.modules['app_py_module'] = app_py_module
-        spec.loader.exec_module(app_py_module)
-        db = app_py_module.db
-except Exception:
-    # 如果导入失败，尝试从 flask_sqlalchemy 导入（延迟导入）
-    from flask_sqlalchemy import SQLAlchemy
-    db = SQLAlchemy()
+from models.database import db
 
 auth_ns = Namespace('auth', description='用户认证相关操作')
 
@@ -65,37 +46,61 @@ login_response_model = auth_ns.model('LoginResponse', {
 @auth_ns.route('/login')
 class Login(Resource):
     @auth_ns.expect(login_model)
-    @auth_ns.marshal_with(login_response_model)
     def post(self):
         """用户登录"""
-        data = request.get_json()
-        username = data.get('username')
-        password = data.get('password')
-        
-        if not username or not password:
-            return {'error': '用户名和密码不能为空'}, 400
-        
-        user = User.get_by_username(username)
-        if not user or not user.check_password(password):
-            return {'error': '用户名或密码错误'}, 401
-        
-        if not user.is_active:
-            return {'error': '账户已被禁用'}, 401
-        
-        # 更新最后登录时间
-        user.last_login = datetime.utcnow()
-        db.session.commit()
-        
-        # 创建访问令牌
-        access_token = create_access_token(
-            identity=user.id,
-            expires_delta=timedelta(hours=1)
-        )
-        
-        return {
-            'token': access_token,
-            'user': user.to_dict()
-        }
+        try:
+            data = request.get_json()
+            username = data.get('username')
+            password = data.get('password')
+            
+            if not username or not password:
+                return {'error': '用户名和密码不能为空'}, 400
+            
+            # 尝试查询用户
+            try:
+                user = User.get_by_username(username)
+            except Exception as e:
+                # 数据库连接失败
+                import logging
+                from sqlalchemy.exc import OperationalError
+                logging.error(f"数据库连接失败: {e}")
+                return {
+                    'error': '数据库连接失败，请检查MySQL配置。',
+                    'details': '请确保MySQL服务正在运行，并在backend/.env文件中配置正确的DATABASE_URL'
+                }, 503
+            
+            if not user:
+                return {'error': '用户名或密码错误'}, 401
+            
+            if not user.check_password(password):
+                return {'error': '用户名或密码错误'}, 401
+            
+            if not user.is_active:
+                return {'error': '账户已被禁用'}, 401
+            
+            # 更新最后登录时间
+            try:
+                user.last_login = datetime.utcnow()
+                db.session.commit()
+            except Exception as e:
+                # 如果更新失败，记录日志但继续登录流程
+                import logging
+                logging.warning(f"更新最后登录时间失败: {e}")
+            
+            # 创建访问令牌
+            access_token = create_access_token(
+                identity=user.id,
+                expires_delta=timedelta(hours=1)
+            )
+            
+            return {
+                'token': access_token,
+                'user': user.to_dict()
+            }, 200
+        except Exception as e:
+            import logging
+            logging.error(f"登录失败: {e}", exc_info=True)
+            return {'error': f'登录失败: {str(e)}'}, 500
 
 @auth_ns.route('/register')
 class Register(Resource):

@@ -17,7 +17,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # 初始化扩展
-db = SQLAlchemy()
+from models.database import db
 jwt = JWTManager()
 mail = Mail()
 api = Api(
@@ -58,6 +58,12 @@ def create_app(config_name=None):
     
     api.init_app(app)
     
+    # 导入所有模型（确保在db初始化后导入，以便正确建立关系）
+    from models.user import User
+    from models.document import Document
+    from models.query_log import QueryLog
+    from models.data_source import DataSource
+    
     # 创建数据库表（带错误处理）
     with app.app_context():
         try:
@@ -67,25 +73,39 @@ def create_app(config_name=None):
             
             # 创建默认管理员用户
             try:
-                from models.user import User
                 User.create_admin()
             except Exception as e:
                 logger.warning(f"创建默认管理员用户失败: {e}")
             
             # 创建默认数据源
             try:
-                from models.data_source import DataSource
                 create_default_data_sources()
             except Exception as e:
                 logger.warning(f"创建默认数据源失败: {e}")
                 
         except OperationalError as e:
-            logger.error(f"数据库连接失败: {e}")
-            logger.warning("应用将继续启动，但数据库相关功能可能不可用")
-            logger.warning("请检查:")
-            logger.warning("  1. MySQL服务是否运行")
-            logger.warning("  2. 数据库配置是否正确 (检查 .env 文件中的 DATABASE_URL)")
-            logger.warning("  3. 数据库用户权限是否正确")
+            logger.error(f"MySQL数据库连接失败: {e}")
+            logger.warning("=" * 50)
+            logger.warning("数据库连接失败，请检查以下配置：")
+            logger.warning("")
+            logger.warning("1. MySQL服务是否运行:")
+            logger.warning("   macOS: brew services start mysql")
+            logger.warning("   Linux: sudo systemctl start mysql")
+            logger.warning("")
+            logger.warning("2. 数据库配置 (backend/.env 文件):")
+            logger.warning("   DATABASE_URL=mysql+pymysql://用户名:密码@localhost/数据库名")
+            logger.warning("   示例: DATABASE_URL=mysql+pymysql://root:yourpassword@localhost/news_rag")
+            logger.warning("")
+            logger.warning("3. 创建数据库:")
+            logger.warning("   mysql -u root -p")
+            logger.warning("   CREATE DATABASE news_rag CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;")
+            logger.warning("")
+            logger.warning("4. 检查用户权限:")
+            logger.warning("   GRANT ALL PRIVILEGES ON news_rag.* TO 'root'@'localhost';")
+            logger.warning("   FLUSH PRIVILEGES;")
+            logger.warning("")
+            logger.warning("应用将继续启动，但登录等数据库相关功能将不可用")
+            logger.warning("=" * 50)
         except Exception as e:
             logger.error(f"数据库初始化失败: {e}")
             logger.warning("应用将继续启动，但数据库相关功能可能不可用")
@@ -97,6 +117,8 @@ def create_app(config_name=None):
 
 def create_default_data_sources():
     """创建默认数据源"""
+    from models.data_source import DataSource
+    
     default_sources = [
         {
             'name': '新浪新闻',
