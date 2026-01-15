@@ -3,30 +3,30 @@
   line-height: 1.5;
   font-weight: 400;
 
-  /* 渐变主题色 */
+  /* 深色主题渐变色 */
   --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  --gradient-dark: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  --gradient-dark: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
   --gradient-blue: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
   --gradient-purple: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
   
-  /* 输入框统一颜色 */
-  --input-bg: rgba(255, 255, 255, 0.95);
+  /* 深色主题输入框 */
+  --input-bg: rgba(25, 30, 40, 0.7);
   --input-border: rgba(102, 126, 234, 0.3);
-  --input-border-focus: rgba(102, 126, 234, 0.8);
-  --input-text: #2c3e50;
-  --input-placeholder: rgba(44, 62, 80, 0.5);
+  --input-border-focus: rgba(102, 126, 234, 0.6);
+  --input-text: #e0e0e0;
+  --input-placeholder: rgba(224, 224, 224, 0.5);
   
-  /* 按钮颜色 */
-  --btn-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --btn-hover: linear-gradient(135deg, #5568d3 0%, #6a3d8f 100%);
-  --btn-danger: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  /* 深色主题按钮 */
+  --btn-primary: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
+  --btn-hover: linear-gradient(135deg, rgba(102, 126, 234, 0.3) 0%, rgba(118, 75, 162, 0.3) 100%);
+  --btn-danger: linear-gradient(135deg, rgba(231, 76, 60, 0.2) 0%, rgba(192, 57, 43, 0.2) 100%);
   
-  /* 卡片背景 */
-  --card-bg: rgba(255, 255, 255, 0.95);
-  --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  /* 深色主题卡片 */
+  --card-bg: rgba(20, 25, 35, 0.6);
+  --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   
-  color-scheme: light;
+  color-scheme: dark;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -43,9 +43,9 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: var(--gradient-primary);
+  background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f1419 100%);
   background-attachment: fixed;
-  color: #2c3e50;
+  color: #e0e0e0;
 }
 
 #root {
@@ -53,7 +53,29 @@ body {
   min-height: 100vh;
 }
 
-/* 统一输入框样式 */
+/* 滚动条美化 - 深色主题 */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(15, 20, 25, 0.5);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 10px;
+  border: 2px solid rgba(15, 20, 25, 0.5);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #5568d3 0%, #6a3d8f 100%);
+  box-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
+}
+
+/* 统一输入框样式 - 深色主题 */
 input[type="text"],
 input[type="password"],
 input[type="email"],
@@ -68,7 +90,8 @@ select {
   font-size: 1rem;
   color: var(--input-text);
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
 }
 
 input::placeholder,
@@ -81,8 +104,9 @@ textarea:focus,
 select:focus {
   outline: none;
   border-color: var(--input-border-focus);
-  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3), 0 0 0 3px rgba(102, 126, 234, 0.1);
   transform: translateY(-1px);
+  background: rgba(30, 35, 45, 0.8);
 }
 
 input:hover,
@@ -91,7 +115,7 @@ select:hover {
   border-color: var(--input-border-focus);
 }
 
-/* 统一按钮样式 */
+/* 统一按钮样式 - 深色主题 */
 button {
   padding: 0.875rem 1.5rem;
   border: none;
@@ -100,9 +124,10 @@ button {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   position: relative;
   overflow: hidden;
+  backdrop-filter: blur(10px);
 }
 
 button::before {
@@ -112,7 +137,7 @@ button::before {
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
   transition: left 0.5s;
 }
 
@@ -122,21 +147,21 @@ button:hover::before {
 
 button:active {
   transform: translateY(1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 button:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
   transform: none;
 }
 
-/* 卡片样式 */
+/* 卡片样式 - 深色主题 */
 .card {
   background: var(--card-bg);
   border-radius: 16px;
   box-shadow: var(--card-shadow);
   padding: 2rem;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(102, 126, 234, 0.2);
 }
