@@ -52,7 +52,6 @@ export default function Layout() {
 
   return (
     <div className="layout">
-      {loading && <Loading />}
       <header className="header">
         <div className="header-content">
           <h1>智能新闻RAG系统</h1>
@@ -80,7 +79,8 @@ export default function Layout() {
             数据分析
           </Link>
         </nav>
-        <main className="main-content">
+        <main className="main-content" style={{ position: 'relative' }}>
+          {loading && <Loading />}
           <Outlet />
         </main>
       </div>

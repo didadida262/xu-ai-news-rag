@@ -58,7 +58,6 @@ function AppContent() {
 
   return (
     <>
-      {loading && <Loading />}
       <Routes location={location}>
         <Route path="/login" element={<Login />} />
         <Route
