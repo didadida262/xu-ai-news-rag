@@ -62,15 +62,36 @@
   border-color: rgba(102, 126, 234, 0.6);
 }
 
+.data-sources {
+  background: rgba(20, 25, 35, 0.6);
+  backdrop-filter: blur(20px);
+  padding: 2.5rem;
+  border-radius: 20px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(102, 126, 234, 0.2) inset;
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  overflow-y: visible;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
 .sources-table {
   width: 100%;
+  min-width: 1200px;
   border-collapse: separate;
   border-spacing: 0;
   background: rgba(15, 20, 25, 0.5);
   border-radius: 12px;
-  overflow: hidden;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(102, 126, 234, 0.2);
+  table-layout: fixed !important;
 }
 
 .sources-table th {
@@ -83,6 +104,11 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-bottom: 1px solid rgba(102, 126, 234, 0.3);
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  word-break: keep-all !important;
+  word-wrap: normal !important;
 }
 
 .sources-table th:first-child {
@@ -98,11 +124,22 @@
   border-bottom: 1px solid rgba(102, 126, 234, 0.1);
   background: rgba(20, 25, 35, 0.3);
   color: #e0e0e0;
-  transition: background 0.2s ease;
+  transition: all 0.2s ease;
+  vertical-align: middle;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  word-break: keep-all !important;
+  word-wrap: normal !important;
+}
+
+.sources-table tr:nth-child(even) td {
+  background: rgba(25, 30, 40, 0.3);
 }
 
 .sources-table tr:hover td {
-  background: rgba(102, 126, 234, 0.15);
+  background: rgba(102, 126, 234, 0.2);
+  color: #fff;
 }
 
 .sources-table tr:last-child td:first-child {
@@ -113,23 +150,82 @@
   border-bottom-right-radius: 12px;
 }
 
+/* 表格列宽优化 - 固定宽度，防止换行 */
+.sources-table th:nth-child(1),
+.sources-table td:nth-child(1) {
+  width: 120px;
+  min-width: 120px;
+}
+
+.sources-table th:nth-child(2),
+.sources-table td:nth-child(2) {
+  width: 80px;
+  min-width: 80px;
+}
+
+.sources-table th:nth-child(3),
+.sources-table td:nth-child(3) {
+  width: 300px;
+  min-width: 300px;
+}
+
+.sources-table th:nth-child(4),
+.sources-table td:nth-child(4) {
+  width: 90px;
+  min-width: 90px;
+}
+
+.sources-table th:nth-child(5),
+.sources-table td:nth-child(5) {
+  width: 100px;
+  min-width: 100px;
+}
+
+.sources-table th:nth-child(6),
+.sources-table td:nth-child(6) {
+  width: 100px;
+  min-width: 100px;
+}
+
+.sources-table th:nth-child(7),
+.sources-table td:nth-child(7) {
+  width: 160px;
+  min-width: 160px;
+}
+
+.sources-table th:nth-child(8),
+.sources-table td:nth-child(8) {
+  width: 250px;
+  min-width: 250px;
+}
+
 .url-cell {
-  max-width: 300px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: #a0a0a0;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  color: #b0b0b0;
   font-size: 0.9rem;
+  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+  word-break: keep-all !important;
+  word-wrap: normal !important;
+}
+
+.url-cell:hover {
+  color: #fff;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .status {
-  padding: 0.5rem 1rem;
+  padding: 0.4rem 0.9rem;
   border-radius: 20px;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   font-weight: 600;
   display: inline-block;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(10px);
+  white-space: nowrap !important;
+  letter-spacing: 0.5px;
 }
 
 .status.active {
@@ -149,7 +245,11 @@
 .actions {
   display: flex;
   gap: 0.5rem;
-  flex-wrap: wrap;
+  flex-wrap: nowrap !important;
+  white-space: nowrap !important;
+  align-items: center;
+  width: 100%;
+  min-width: fit-content;
 }
 
 .actions button {
@@ -161,6 +261,9 @@
   font-weight: 500;
   transition: all 0.3s ease;
   backdrop-filter: blur(10px);
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  min-width: fit-content;
 }
 
 .actions button:not(.danger) {

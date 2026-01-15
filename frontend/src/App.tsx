@@ -1,6 +1,8 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from './hooks/useAuth'
 import Layout from './components/Layout'
+import Loading from './components/Loading'
 import Login from './pages/Login'
 import Home from './pages/Home'
 import DataSources from './pages/DataSources'
@@ -23,10 +25,41 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-function App() {
+function AppContent() {
+  const location = useLocation()
+  const [loading, setLoading] = useState(false)
+  const prevLocationRef = useRef(location.pathname)
+  const isInitialMount = useRef(true)
+
+  useEffect(() => {
+    // 跳过首次渲染
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      prevLocationRef.current = location.pathname
+      return
+    }
+
+    // 路由变化时显示loading
+    if (prevLocationRef.current !== location.pathname) {
+      setLoading(true)
+      prevLocationRef.current = location.pathname
+      
+      // 设置一个较短的延迟，确保页面切换有视觉反馈
+      const timer = setTimeout(() => {
+        setLoading(false)
+      }, 300)
+
+      return () => {
+        clearTimeout(timer)
+        setLoading(false)
+      }
+    }
+  }, [location.pathname])
+
   return (
-    <Router>
-      <Routes>
+    <>
+      {loading && <Loading />}
+      <Routes location={location}>
         <Route path="/login" element={<Login />} />
         <Route
           path="/"
@@ -43,6 +76,14 @@ function App() {
           <Route path="analysis" element={<Analysis />} />
         </Route>
       </Routes>
+    </>
+  )
+}
+
+function App() {
+  return (
+    <Router>
+      <AppContent />
     </Router>
   )
 }

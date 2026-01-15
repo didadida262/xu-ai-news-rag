@@ -60,50 +60,52 @@ export default function DataSources() {
         <button onClick={() => setShowModal(true)}>添加数据源</button>
       </div>
 
-      <table className="sources-table">
-        <thead>
-          <tr>
-            <th>名称</th>
-            <th>类型</th>
-            <th>URL</th>
-            <th>状态</th>
-            <th>抓取次数</th>
-            <th>成功率</th>
-            <th>最后抓取</th>
-            <th>操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sources.map((source) => (
-            <tr key={source.id}>
-              <td>{source.name}</td>
-              <td>{source.source_type.toUpperCase()}</td>
-              <td className="url-cell">{source.url}</td>
-              <td>
-                <span className={`status ${source.is_active ? 'active' : 'inactive'}`}>
-                  {source.is_active ? '激活' : '未激活'}
-                </span>
-              </td>
-              <td>{source.fetch_count}</td>
-              <td>
-                {source.fetch_count > 0
-                  ? ((source.success_count / source.fetch_count) * 100).toFixed(1) + '%'
-                  : '-'}
-              </td>
-              <td>{source.last_fetch ? new Date(source.last_fetch).toLocaleString() : '-'}</td>
-              <td>
-                <div className="actions">
-                  <button onClick={() => handleFetch(source.id)}>抓取</button>
-                  <button onClick={() => toggleActive(source)}>
-                    {source.is_active ? '停用' : '启用'}
-                  </button>
-                  <button onClick={() => handleDelete(source.id)} className="danger">删除</button>
-                </div>
-              </td>
+      <div className="table-wrapper">
+        <table className="sources-table">
+          <thead>
+            <tr>
+              <th>名称</th>
+              <th>类型</th>
+              <th>URL</th>
+              <th>状态</th>
+              <th>抓取次数</th>
+              <th>成功率</th>
+              <th>最后抓取</th>
+              <th>操作</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {sources.map((source) => (
+              <tr key={source.id}>
+                <td>{source.name}</td>
+                <td>{source.source_type.toUpperCase()}</td>
+                <td className="url-cell">{source.url}</td>
+                <td>
+                  <span className={`status ${source.is_active ? 'active' : 'inactive'}`}>
+                    {source.is_active ? '激活' : '未激活'}
+                  </span>
+                </td>
+                <td>{source.fetch_count}</td>
+                <td>
+                  {source.fetch_count > 0
+                    ? ((source.success_count / source.fetch_count) * 100).toFixed(1) + '%'
+                    : '-'}
+                </td>
+                <td>{source.last_fetch ? new Date(source.last_fetch).toLocaleString() : '-'}</td>
+                <td>
+                  <div className="actions">
+                    <button onClick={() => handleFetch(source.id)}>抓取</button>
+                    <button onClick={() => toggleActive(source)}>
+                      {source.is_active ? '停用' : '启用'}
+                    </button>
+                    <button onClick={() => handleDelete(source.id)} className="danger">删除</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {sources.length === 0 && <div className="empty">暂无数据源</div>}
     </div>

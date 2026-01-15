@@ -1,11 +1,42 @@
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../hooks/useAuth'
+import Loading from './Loading'
 import './Layout.css'
 
 export default function Layout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const [loading, setLoading] = useState(false)
+  const prevPathRef = useRef(location.pathname)
+  const isInitialMount = useRef(true)
+
+  useEffect(() => {
+    // 跳过首次渲染
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      prevPathRef.current = location.pathname
+      return
+    }
+    
+    // 只在内部路由切换时显示loading（排除登录页）
+    if (prevPathRef.current !== location.pathname && location.pathname !== '/login') {
+      setLoading(true)
+      prevPathRef.current = location.pathname
+      
+      const timer = setTimeout(() => {
+        setLoading(false)
+      }, 200)
+
+      return () => {
+        clearTimeout(timer)
+        setLoading(false)
+      }
+    } else {
+      prevPathRef.current = location.pathname
+    }
+  }, [location.pathname])
 
   const handleLogout = () => {
     logout()
@@ -21,6 +52,7 @@ export default function Layout() {
 
   return (
     <div className="layout">
+      {loading && <Loading />}
       <header className="header">
         <div className="header-content">
           <h1>智能新闻RAG系统</h1>
