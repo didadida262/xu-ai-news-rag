@@ -87,9 +87,9 @@ class Login(Resource):
                 import logging
                 logging.warning(f"更新最后登录时间失败: {e}")
             
-            # 创建访问令牌
+            # 创建访问令牌（identity必须是字符串）
             access_token = create_access_token(
-                identity=user.id,
+                identity=str(user.id),
                 expires_delta=timedelta(hours=1)
             )
             
@@ -147,7 +147,11 @@ class Profile(Resource):
     def get(self):
         """获取当前用户信息"""
         user_id = get_jwt_identity()
-        user = User.get_by_id(user_id)
+        # JWT identity返回的是字符串，需要转换为整数
+        try:
+            user = User.get_by_id(int(user_id))
+        except (ValueError, TypeError):
+            return {'error': '无效的用户ID'}, 400
         
         if not user:
             return {'error': '用户不存在'}, 404

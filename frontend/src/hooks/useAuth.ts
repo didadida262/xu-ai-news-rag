@@ -21,9 +21,12 @@ export const useAuth = () => {
 
   const login = async (username: string, password: string) => {
     const response = await authService.login({ username, password })
-    localStorage.setItem('token', response.token)
-    setUser(response.user)
-    return response
+    if (response && response.token) {
+      localStorage.setItem('token', response.token)
+      setUser(response.user)
+      return response
+    }
+    throw new Error('登录失败：未收到token')
   }
 
   const logout = () => {

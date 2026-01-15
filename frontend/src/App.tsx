@@ -13,10 +13,14 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading } = useAuth()
   
   if (loading) {
-    return <div>加载中...</div>
+    return <div style={{ padding: '20px', textAlign: 'center' }}>加载中...</div>
   }
   
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" />
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />
+  }
+  
+  return <>{children}</>
 }
 
 function App() {
