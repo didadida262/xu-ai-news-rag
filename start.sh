@@ -209,6 +209,40 @@ EOF
     fi
 }
 
+# 启动Celery服务
+start_celery() {
+    print_message "$BLUE" "正在启动Celery服务..."
+    
+    cd "$BACKEND_DIR"
+    
+    # 检查Redis是否可用（可选）
+    if ! redis-cli ping > /dev/null 2>&1; then
+        print_message "$YELLOW" "⚠ Redis未运行，Celery任务可能无法正常工作"
+    fi
+    
+    # 启动Celery Worker
+    print_message "$GREEN" "启动Celery Worker..."
+    nohup "$BACKEND_DIR/venv/bin/python" -m celery -A celery_app worker --loglevel=info > "$CELERY_LOG" 2>&1 &
+    CELERY_PID=$!
+    echo $CELERY_PID >> "$PID_FILE"
+    
+    # 启动Celery Beat
+    print_message "$GREEN" "启动Celery Beat调度器..."
+    nohup "$BACKEND_DIR/venv/bin/python" -m celery -A celery_app beat --loglevel=info > "$CELERY_BEAT_LOG" 2>&1 &
+    CELERY_BEAT_PID=$!
+    echo $CELERY_BEAT_PID >> "$PID_FILE"
+    
+    # 等待启动
+    sleep 2
+    if ps -p $CELERY_PID > /dev/null 2>&1 && ps -p $CELERY_BEAT_PID > /dev/null 2>&1; then
+        print_message "$GREEN" "✓ Celery服务已启动 (Worker PID: $CELERY_PID, Beat PID: $CELERY_BEAT_PID)"
+        return 0
+    else
+        print_message "$YELLOW" "⚠ Celery服务可能启动失败，请查看日志: $CELERY_LOG"
+        return 0
+    fi
+}
+
 # 启动前端服务
 start_frontend() {
     print_message "$BLUE" "正在启动前端服务..."
@@ -283,6 +317,8 @@ main() {
     # 启动服务
     start_backend
     echo ""
+    start_celery
+    echo ""
     start_frontend
     echo ""
     
@@ -301,6 +337,8 @@ main() {
     echo ""
     print_message "$YELLOW" "日志文件:"
     print_message "$BLUE" "  后端: $BACKEND_LOG"
+    print_message "$BLUE" "  Celery Worker: $CELERY_LOG"
+    print_message "$BLUE" "  Celery Beat: $CELERY_BEAT_LOG"
     if [ -f "$FRONTEND_DIR/package.json" ]; then
         print_message "$BLUE" "  前端: $FRONTEND_LOG"
     fi
