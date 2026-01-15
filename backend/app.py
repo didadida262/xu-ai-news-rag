@@ -63,19 +63,19 @@ def create_app(config_name=None):
         try:
             # 测试数据库连接
             db.engine.connect()
-            db.create_all()
-            
-            # 创建默认管理员用户
+        db.create_all()
+        
+        # 创建默认管理员用户
             try:
-                from models.user import User
-                User.create_admin()
+        from models.user import User
+        User.create_admin()
             except Exception as e:
                 logger.warning(f"创建默认管理员用户失败: {e}")
-            
-            # 创建默认数据源
+        
+        # 创建默认数据源
             try:
-                from models.data_source import DataSource
-                create_default_data_sources()
+        from models.data_source import DataSource
+        create_default_data_sources()
             except Exception as e:
                 logger.warning(f"创建默认数据源失败: {e}")
                 
@@ -152,7 +152,7 @@ def register_error_handlers(app):
     @app.errorhandler(500)
     def internal_error(error):
         try:
-            db.session.rollback()
+        db.session.rollback()
         except Exception:
             pass  # 如果数据库不可用，忽略回滚错误
         return jsonify({'error': 'Internal Server Error', 'message': 'An unexpected error occurred'}), 500

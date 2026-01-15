@@ -20,6 +20,8 @@ FRONTEND_DIR="$PROJECT_ROOT/frontend"
 LOG_DIR="$PROJECT_ROOT/logs"
 BACKEND_LOG="$LOG_DIR/backend.log"
 FRONTEND_LOG="$LOG_DIR/frontend.log"
+CELERY_LOG="$LOG_DIR/celery.log"
+CELERY_BEAT_LOG="$LOG_DIR/celery_beat.log"
 PID_FILE="$LOG_DIR/startup.pid"
 
 # 创建日志目录
@@ -41,6 +43,8 @@ cleanup() {
     
     # 查找并终止相关进程
     pkill -f "python.*app.py" 2>/dev/null
+    pkill -f "celery.*worker" 2>/dev/null
+    pkill -f "celery.*beat" 2>/dev/null
     pkill -f "node.*react" 2>/dev/null
     pkill -f "npm start" 2>/dev/null
     
@@ -183,8 +187,8 @@ EOF
         # 检查端口是否在监听
         for i in {1..10}; do
             if lsof -Pi :5000 -sTCP:LISTEN -t >/dev/null 2>&1; then
-                print_message "$GREEN" "✓ 后端服务已启动 (PID: $BACKEND_PID)"
-                return 0
+        print_message "$GREEN" "✓ 后端服务已启动 (PID: $BACKEND_PID)"
+        return 0
             fi
             sleep 1
         done
