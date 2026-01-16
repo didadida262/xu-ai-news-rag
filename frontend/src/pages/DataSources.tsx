@@ -2,11 +2,21 @@ import { useEffect, useState } from 'react'
 import { dataSourceService, DataSource } from '../services/dataSource'
 import './DataSources.css'
 
+// 预设数据源模板
+const PRESET_SOURCES = [
+  { name: '新浪新闻', type: 'rss' as const, url: 'http://rss.sina.com.cn/news/china.xml', description: '新浪新闻国内新闻RSS源' },
+  { name: '网易新闻', type: 'rss' as const, url: 'http://news.163.com/special/00011K6L/rss_newstop.xml', description: '网易新闻头条RSS源' },
+  { name: '腾讯新闻', type: 'rss' as const, url: 'http://news.qq.com/newsgn/rss_newsgn.xml', description: '腾讯新闻国内新闻RSS源' },
+  { name: '新华网', type: 'rss' as const, url: 'http://www.xinhuanet.com/rss.xml', description: '新华网RSS新闻源' },
+  { name: '人民网', type: 'rss' as const, url: 'http://www.people.com.cn/rss/politics.xml', description: '人民网时政新闻RSS源' },
+]
+
 export default function DataSources() {
   const [sources, setSources] = useState<DataSource[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing] = useState<DataSource | null>(null)
+  const [selectedPreset, setSelectedPreset] = useState<string>('')
 
   useEffect(() => {
     loadSources()
@@ -51,13 +61,70 @@ export default function DataSources() {
     }
   }
 
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const formData = new FormData(e.currentTarget)
+    const data = {
+      name: formData.get('name') as string,
+      source_type: formData.get('source_type') as 'rss' | 'web' | 'api',
+      url: formData.get('url') as string,
+      description: formData.get('description') as string || '',
+      fetch_interval: parseInt(formData.get('fetch_interval') as string) || 3600,
+    }
+
+    try {
+      if (editing) {
+        await dataSourceService.update(editing.id, data)
+      } else {
+        await dataSourceService.create(data)
+      }
+      setShowModal(false)
+      setEditing(null)
+      loadSources()
+    } catch (error: any) {
+      alert(error.error || '操作失败')
+    }
+  }
+
+  const handleEdit = (source: DataSource) => {
+    setEditing(source)
+    setSelectedPreset('')
+    setShowModal(true)
+  }
+
+  const handlePresetChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const presetId = e.target.value
+    setSelectedPreset(presetId)
+    if (presetId) {
+      const preset = PRESET_SOURCES.find(p => `${p.name}-${p.type}` === presetId)
+      if (preset) {
+        const form = e.target.closest('form')
+        if (form) {
+          const nameInput = form.querySelector<HTMLInputElement>('input[name="name"]')
+          const typeSelect = form.querySelector<HTMLSelectElement>('select[name="source_type"]')
+          const urlInput = form.querySelector<HTMLInputElement>('input[name="url"]')
+          const descTextarea = form.querySelector<HTMLTextAreaElement>('textarea[name="description"]')
+          
+          if (nameInput) nameInput.value = preset.name
+          if (typeSelect) typeSelect.value = preset.type
+          if (urlInput) urlInput.value = preset.url
+          if (descTextarea) descTextarea.value = preset.description
+        }
+      }
+    }
+  }
+
   if (loading) return <div>加载中...</div>
 
   return (
     <div className="data-sources">
       <div className="page-header">
         <h1>数据源管理</h1>
-        <button onClick={() => setShowModal(true)}>添加数据源</button>
+        <button onClick={() => {
+          setEditing(null)
+          setSelectedPreset('')
+          setShowModal(true)
+        }}>添加数据源</button>
       </div>
 
       <div className="table-wrapper">
@@ -95,6 +162,7 @@ export default function DataSources() {
                 <td>
                   <div className="actions">
                     <button onClick={() => handleFetch(source.id)}>抓取</button>
+                    <button onClick={() => handleEdit(source)}>编辑</button>
                     <button onClick={() => toggleActive(source)}>
                       {source.is_active ? '停用' : '启用'}
                     </button>
@@ -108,6 +176,96 @@ export default function DataSources() {
       </div>
 
       {sources.length === 0 && <div className="empty">暂无数据源</div>}
+
+      {showModal && (
+        <div className="modal-overlay" onClick={() => {
+          setShowModal(false)
+          setEditing(null)
+        }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{editing ? '编辑数据源' : '添加数据源'}</h2>
+              <button className="modal-close" onClick={() => {
+                setShowModal(false)
+                setEditing(null)
+              }}>×</button>
+            </div>
+            <form onSubmit={handleSubmit}>
+              {!editing && (
+                <div className="form-group">
+                  <label>快速选择（可选）</label>
+                  <select 
+                    value={selectedPreset} 
+                    onChange={handlePresetChange}
+                    className="preset-select"
+                  >
+                    <option value="">-- 选择预设数据源 --</option>
+                    {PRESET_SOURCES.map((preset) => (
+                      <option key={`${preset.name}-${preset.type}`} value={`${preset.name}-${preset.type}`}>
+                        {preset.name} ({preset.type.toUpperCase()})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <div className="form-group">
+                <label>名称 *</label>
+                <input
+                  type="text"
+                  name="name"
+                  required
+                  defaultValue={editing?.name || ''}
+                  placeholder="例如：新浪新闻"
+                />
+              </div>
+              <div className="form-group">
+                <label>类型 *</label>
+                <select name="source_type" required defaultValue={editing?.source_type || 'rss'}>
+                  <option value="rss">RSS</option>
+                  <option value="web">网页</option>
+                  <option value="api">API（智能代理）</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>URL *</label>
+                <input
+                  type="url"
+                  name="url"
+                  required
+                  defaultValue={editing?.url || ''}
+                  placeholder="https://example.com/rss.xml"
+                />
+              </div>
+              <div className="form-group">
+                <label>描述</label>
+                <textarea
+                  name="description"
+                  rows={3}
+                  defaultValue={editing?.description || ''}
+                  placeholder="数据源描述（可选）"
+                />
+              </div>
+              <div className="form-group">
+                <label>抓取间隔（秒）</label>
+                <input
+                  type="number"
+                  name="fetch_interval"
+                  min={60}
+                  defaultValue={editing?.fetch_interval || 3600}
+                  placeholder="3600"
+                />
+              </div>
+              <div className="form-actions">
+                <button type="button" onClick={() => {
+                  setShowModal(false)
+                  setEditing(null)
+                }}>取消</button>
+                <button type="submit">{editing ? '更新' : '创建'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
