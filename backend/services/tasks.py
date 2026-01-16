@@ -50,16 +50,20 @@ def fetch_data_source(self, source_id: int):
     from app import create_app
     from models.data_source import DataSource
     from models.document import Document
-    from app import db
+    from models.database import db
     
     app = create_app()
     with app.app_context():
         try:
             source = DataSource.query.get(source_id)
-            if not source or not source.is_active:
+            if not source:
+                logger.error(f"数据源 {source_id} 不存在")
+                return {'status': 'error', 'reason': 'source not found'}
+            if not source.is_active:
+                logger.warning(f"数据源 {source.name} 未激活，跳过抓取")
                 return {'status': 'skipped', 'reason': 'source not active'}
             
-            logger.info(f"开始抓取数据源: {source.name} ({source.source_type})")
+            logger.info(f"开始抓取数据源: {source.name} (ID: {source_id}, 类型: {source.source_type}, URL: {source.url})")
             
             articles = []
             
@@ -67,6 +71,7 @@ def fetch_data_source(self, source_id: int):
             if source.source_type == 'rss':
                 fetcher = RSSFetcher()
                 articles = fetcher.fetch(source.url)
+                logger.info(f"RSS抓取完成，获取到 {len(articles)} 篇文章")
                 
             elif source.source_type == 'web':
                 fetcher = WebFetcher()
@@ -74,11 +79,16 @@ def fetch_data_source(self, source_id: int):
                 article = fetcher.fetch(source.url, config)
                 if article:
                     articles = [article]
+                    logger.info(f"网页抓取完成，获取到 1 篇文章")
+                else:
+                    articles = []
+                    logger.warning(f"网页抓取未获取到内容")
                     
             elif source.source_type == 'api':
                 # API类型暂不实现
                 logger.warning(f"API类型数据源暂不支持: {source.name}")
                 source.update_fetch_result(success=False, error_message="API类型暂不支持")
+                db.session.commit()
                 return {'status': 'skipped', 'reason': 'API type not supported'}
             
             # 保存文章到数据库
@@ -115,16 +125,19 @@ def fetch_data_source(self, source_id: int):
                     logger.error(f"保存文章失败: {e}")
                     continue
             
-            # 提交事务
+            # 提交文档事务
             db.session.commit()
             
-            # 更新数据源状态
+            # 重新获取数据源对象（避免过期）
+            source = DataSource.query.get(source_id)
+            
+            # 更新数据源状态（即使没有文章也算成功，因为可能是RSS源没有新内容）
             source.update_fetch_result(
                 success=True,
                 error_message=None
             )
             
-            logger.info(f"数据源 {source.name} 抓取完成，保存 {saved_count} 篇文章")
+            logger.info(f"数据源 {source.name} 抓取完成，找到 {len(articles)} 篇文章，保存 {saved_count} 篇，fetch_count已更新为 {source.fetch_count}")
             
             return {
                 'status': 'success',
@@ -152,6 +165,8 @@ def fetch_data_source(self, source_id: int):
 def fetch_with_agent(url: str, query: str = None):
     """使用智能代理抓取指定URL"""
     from app import create_app
+    from models.document import Document
+    from models.database import db
     from config.config import config
     import os
     

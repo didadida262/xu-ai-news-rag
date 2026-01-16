@@ -24,7 +24,7 @@ def make_celery(app=None):
         beat_schedule={
             'fetch-all-sources': {
                 'task': 'services.tasks.fetch_all_data_sources',
-                'schedule': 300.0,  # 每5分钟检查一次
+                'schedule': 2.0,  # 每2秒检查一次（测试用）
             },
         },
     )

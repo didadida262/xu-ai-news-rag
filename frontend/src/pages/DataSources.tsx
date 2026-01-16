@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { dataSourceService, DataSource } from '../services/dataSource'
 import './DataSources.css'
 
@@ -17,6 +17,7 @@ export default function DataSources() {
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing] = useState<DataSource | null>(null)
   const [selectedPreset, setSelectedPreset] = useState<string>('')
+  const refreshIntervalsRef = useRef<Map<number, NodeJS.Timeout>>(new Map())
 
   useEffect(() => {
     loadSources()
@@ -35,12 +36,63 @@ export default function DataSources() {
 
   const handleFetch = async (id: number) => {
     try {
+      // 清除该数据源之前的刷新定时器（如果存在）
+      const existingInterval = refreshIntervalsRef.current.get(id)
+      if (existingInterval) {
+        clearInterval(existingInterval)
+      }
+      
       await dataSourceService.fetch(id)
-      alert('抓取任务已启动')
+      
+      // 记录当前抓取次数，用于检测数据是否已更新
+      const currentSource = sources.find(s => s.id === id)
+      const initialFetchCount = currentSource?.fetch_count || 0
+      const initialLastFetch = currentSource?.last_fetch
+      
+      // 立即刷新一次
+      await loadSources()
+      
+      // 每2秒刷新一次，直到数据更新或达到最大刷新时间（60秒）
+      let refreshCount = 0
+      const maxRefreshes = 30 // 30次 × 2秒 = 60秒
+      
+      const interval = setInterval(async () => {
+        refreshCount++
+        await loadSources()
+        
+        // 检查数据是否已更新（抓取次数增加或最后抓取时间变化）
+        const updatedSources = await dataSourceService.list()
+        const updatedSource = updatedSources.find(s => s.id === id)
+        
+        if (updatedSource) {
+          const fetchCountUpdated = updatedSource.fetch_count > initialFetchCount
+          const lastFetchUpdated = updatedSource.last_fetch !== initialLastFetch
+          
+          if (fetchCountUpdated || lastFetchUpdated) {
+            // 数据已更新，停止刷新
+            clearInterval(interval)
+            refreshIntervalsRef.current.delete(id)
+          } else if (refreshCount >= maxRefreshes) {
+            // 达到最大刷新次数，停止刷新
+            clearInterval(interval)
+            refreshIntervalsRef.current.delete(id)
+          }
+        }
+      }, 2000)
+      
+      refreshIntervalsRef.current.set(id, interval)
     } catch (error: any) {
       alert(error.error || '启动失败')
     }
   }
+  
+  // 组件卸载时清除所有定时器
+  useEffect(() => {
+    return () => {
+      refreshIntervalsRef.current.forEach(interval => clearInterval(interval))
+      refreshIntervalsRef.current.clear()
+    }
+  }, [])
 
   const handleDelete = async (id: number) => {
     if (!confirm('确定要删除这个数据源吗？')) return
@@ -161,12 +213,34 @@ export default function DataSources() {
                 <td>{source.last_fetch ? new Date(source.last_fetch).toLocaleString() : '-'}</td>
                 <td>
                   <div className="actions">
-                    <button onClick={() => handleFetch(source.id)}>抓取</button>
-                    <button onClick={() => handleEdit(source)}>编辑</button>
-                    <button onClick={() => toggleActive(source)}>
+                    <button 
+                      className="btn-fetch" 
+                      onClick={() => handleFetch(source.id)}
+                      title="立即抓取该数据源的内容"
+                    >
+                      抓取
+                    </button>
+                    <button 
+                      className="btn-edit" 
+                      onClick={() => handleEdit(source)}
+                      title="编辑数据源配置信息"
+                    >
+                      编辑
+                    </button>
+                    <button 
+                      className={source.is_active ? "btn-disable" : "btn-enable"}
+                      onClick={() => toggleActive(source)}
+                      title={source.is_active ? "停用该数据源，停止自动抓取" : "启用该数据源，恢复自动抓取"}
+                    >
                       {source.is_active ? '停用' : '启用'}
                     </button>
-                    <button onClick={() => handleDelete(source.id)} className="danger">删除</button>
+                    <button 
+                      className="btn-delete danger" 
+                      onClick={() => handleDelete(source.id)}
+                      title="删除该数据源（不可恢复）"
+                    >
+                      删除
+                    </button>
                   </div>
                 </td>
               </tr>

@@ -7,6 +7,11 @@
     0 8px 32px rgba(0, 0, 0, 0.4),
     0 0 0 1px rgba(102, 126, 234, 0.2) inset;
   border: 1px solid rgba(102, 126, 234, 0.2);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .page-header {
@@ -113,7 +118,7 @@
 
 .sources-table {
   width: 100%;
-  min-width: 1250px;
+  min-width: 1200px;
   border-collapse: separate;
   border-spacing: 0;
   background: rgba(15, 20, 25, 0.5);
@@ -139,7 +144,6 @@
   text-overflow: ellipsis !important;
   word-break: keep-all !important;
   word-wrap: normal !important;
-  max-width: 0;
 }
 
 .sources-table th:first-child {
@@ -162,8 +166,13 @@
   text-overflow: ellipsis !important;
   word-break: keep-all !important;
   word-wrap: normal !important;
-  max-width: 0;
   font-size: 0.875rem;
+}
+
+/* 状态列特殊处理，不显示省略号 */
+.sources-table td:nth-child(4) {
+  overflow: visible !important;
+  text-overflow: clip !important;
 }
 
 .sources-table tr:nth-child(even) td {
@@ -200,9 +209,11 @@
 
 .sources-table th:nth-child(3),
 .sources-table td:nth-child(3) {
-  width: 300px !important;
-  min-width: 300px !important;
-  max-width: 300px !important;
+  width: 280px !important;
+  min-width: 280px !important;
+  max-width: 280px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 .sources-table th:nth-child(4),
@@ -245,10 +256,11 @@
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
   color: #b0b0b0;
-  font-size: 0.9rem;
+  font-size: 0.8125rem;
   font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
   word-break: keep-all !important;
   word-wrap: normal !important;
+  max-width: 100%;
 }
 
 .url-cell:hover {
@@ -258,29 +270,32 @@
 }
 
 .status {
-  padding: 0.4rem 0.9rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.6875rem;
   font-weight: 600;
   display: inline-block;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(10px);
   white-space: nowrap !important;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
+  line-height: 1.2;
+  min-width: 48px;
+  text-align: center;
 }
 
 .status.active {
-  background: linear-gradient(135deg, rgba(46, 204, 113, 0.2) 0%, rgba(39, 174, 96, 0.2) 100%);
+  background: linear-gradient(135deg, rgba(46, 204, 113, 0.25) 0%, rgba(39, 174, 96, 0.25) 100%);
   color: #2ecc71;
-  border: 1px solid rgba(46, 204, 113, 0.4);
-  box-shadow: 0 0 10px rgba(46, 204, 113, 0.3);
+  border: 1px solid rgba(46, 204, 113, 0.5);
+  box-shadow: 0 0 8px rgba(46, 204, 113, 0.3);
 }
 
 .status.inactive {
-  background: linear-gradient(135deg, rgba(231, 76, 60, 0.2) 0%, rgba(192, 57, 43, 0.2) 100%);
+  background: linear-gradient(135deg, rgba(231, 76, 60, 0.25) 0%, rgba(192, 57, 43, 0.25) 100%);
   color: #e74c3c;
-  border: 1px solid rgba(231, 76, 60, 0.4);
-  box-shadow: 0 0 10px rgba(231, 76, 60, 0.3);
+  border: 1px solid rgba(231, 76, 60, 0.5);
+  box-shadow: 0 0 8px rgba(231, 76, 60, 0.3);
 }
 
 .actions {
@@ -306,21 +321,67 @@
   white-space: nowrap !important;
   flex-shrink: 0 !important;
   min-width: auto;
+  position: relative;
 }
 
-.actions button:not(.danger) {
+/* 抓取按钮 - 蓝色 */
+.actions button.btn-fetch {
   background: linear-gradient(135deg, rgba(52, 152, 219, 0.2) 0%, rgba(41, 128, 185, 0.2) 100%);
   color: #3498db;
   border: 1px solid rgba(52, 152, 219, 0.4);
   box-shadow: 0 2px 8px rgba(52, 152, 219, 0.2);
 }
 
-.actions button:not(.danger):hover {
+.actions button.btn-fetch:hover {
   background: linear-gradient(135deg, rgba(52, 152, 219, 0.3) 0%, rgba(41, 128, 185, 0.3) 100%);
   box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
   transform: translateY(-2px);
 }
 
+/* 编辑按钮 - 黄色/橙色 */
+.actions button.btn-edit {
+  background: linear-gradient(135deg, rgba(241, 196, 15, 0.2) 0%, rgba(243, 156, 18, 0.2) 100%);
+  color: #f1c40f;
+  border: 1px solid rgba(241, 196, 15, 0.4);
+  box-shadow: 0 2px 8px rgba(241, 196, 15, 0.2);
+}
+
+.actions button.btn-edit:hover {
+  background: linear-gradient(135deg, rgba(241, 196, 15, 0.3) 0%, rgba(243, 156, 18, 0.3) 100%);
+  box-shadow: 0 4px 12px rgba(241, 196, 15, 0.4);
+  transform: translateY(-2px);
+}
+
+/* 停用按钮 - 灰色 */
+.actions button.btn-disable {
+  background: linear-gradient(135deg, rgba(149, 165, 166, 0.2) 0%, rgba(127, 140, 141, 0.2) 100%);
+  color: #95a5a6;
+  border: 1px solid rgba(149, 165, 166, 0.4);
+  box-shadow: 0 2px 8px rgba(149, 165, 166, 0.2);
+}
+
+.actions button.btn-disable:hover {
+  background: linear-gradient(135deg, rgba(149, 165, 166, 0.3) 0%, rgba(127, 140, 141, 0.3) 100%);
+  box-shadow: 0 4px 12px rgba(149, 165, 166, 0.4);
+  transform: translateY(-2px);
+}
+
+/* 启用按钮 - 绿色 */
+.actions button.btn-enable {
+  background: linear-gradient(135deg, rgba(46, 204, 113, 0.2) 0%, rgba(39, 174, 96, 0.2) 100%);
+  color: #2ecc71;
+  border: 1px solid rgba(46, 204, 113, 0.4);
+  box-shadow: 0 2px 8px rgba(46, 204, 113, 0.2);
+}
+
+.actions button.btn-enable:hover {
+  background: linear-gradient(135deg, rgba(46, 204, 113, 0.3) 0%, rgba(39, 174, 96, 0.3) 100%);
+  box-shadow: 0 4px 12px rgba(46, 204, 113, 0.4);
+  transform: translateY(-2px);
+}
+
+/* 删除按钮 - 红色 */
+.actions button.btn-delete,
 .actions button.danger {
   background: linear-gradient(135deg, rgba(231, 76, 60, 0.2) 0%, rgba(192, 57, 43, 0.2) 100%);
   color: #e74c3c;
@@ -328,10 +389,64 @@
   box-shadow: 0 2px 8px rgba(231, 76, 60, 0.2);
 }
 
+.actions button.btn-delete:hover,
 .actions button.danger:hover {
   background: linear-gradient(135deg, rgba(231, 76, 60, 0.3) 0%, rgba(192, 57, 43, 0.3) 100%);
   box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
   transform: translateY(-2px);
+}
+
+/* Tooltip 样式 */
+.actions button {
+  position: relative;
+}
+
+.actions button::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px);
+  padding: 0.5rem 0.75rem;
+  background: rgba(15, 20, 25, 0.95);
+  color: #e0e0e0;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  border-radius: 6px;
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  z-index: 1000;
+  backdrop-filter: blur(10px);
+}
+
+.actions button::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-2px);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid rgba(102, 126, 234, 0.3);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 1001;
+}
+
+.actions button:hover::after,
+.actions button:hover::before {
+  opacity: 1;
+}
+
+.actions button:active::after,
+.actions button:active::before {
+  opacity: 1;
 }
 
 .empty {
