@@ -39,7 +39,9 @@ export default function Home() {
   if (loading) {
     return (
       <div className="home">
-        <h1>系统概览</h1>
+        <div className="page-header">
+          <h1>系统概览</h1>
+        </div>
         <div className="loading-state">加载中...</div>
       </div>
     )
@@ -48,7 +50,9 @@ export default function Home() {
   if (!stats) {
     return (
       <div className="home">
-        <h1>系统概览</h1>
+        <div className="page-header">
+          <h1>系统概览</h1>
+        </div>
         <div className="loading-state">暂无数据</div>
       </div>
     )
@@ -56,7 +60,9 @@ export default function Home() {
 
   return (
     <div className="home">
-      <h1>系统概览</h1>
+      <div className="page-header">
+        <h1>系统概览</h1>
+      </div>
       
       <div className="stats-section">
         <h2 className="section-title">数据源统计</h2>

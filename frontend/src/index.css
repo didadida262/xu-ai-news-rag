@@ -83,11 +83,11 @@ input[type="number"],
 textarea,
 select {
   width: 100%;
-  padding: 0.875rem 1rem;
+  padding: 0.625rem 0.875rem;
   background: var(--input-bg);
-  border: 2px solid var(--input-border);
-  border-radius: 8px;
-  font-size: 1rem;
+  border: 1px solid var(--input-border);
+  border-radius: 6px;
+  font-size: 0.875rem;
   color: var(--input-text);
   transition: all 0.3s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
@@ -117,10 +117,10 @@ select:hover {
 
 /* 统一按钮样式 - 深色主题 */
 button {
-  padding: 0.875rem 1.5rem;
+  padding: 0.625rem 1.25rem;
   border: none;
-  border-radius: 8px;
-  font-size: 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -159,9 +159,9 @@ button:disabled {
 /* 卡片样式 - 深色主题 */
 .card {
   background: var(--card-bg);
-  border-radius: 16px;
+  border-radius: 12px;
   box-shadow: var(--card-shadow);
-  padding: 2rem;
+  padding: 1.25rem;
   backdrop-filter: blur(20px);
   border: 1px solid rgba(102, 126, 234, 0.2);
 }

@@ -1,8 +1,8 @@
 .query {
   background: rgba(20, 25, 35, 0.6);
   backdrop-filter: blur(20px);
-  padding: 2.5rem;
-  border-radius: 20px;
+  padding: 1rem;
+  border-radius: 12px;
   box-shadow: 
     0 8px 32px rgba(0, 0, 0, 0.4),
     0 0 0 1px rgba(102, 126, 234, 0.2) inset;
@@ -15,12 +15,12 @@
 }
 
 .query h1 {
-  margin-bottom: 2.5rem;
+  margin: 0;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 700;
   text-shadow: 0 0 30px rgba(102, 126, 234, 0.5);
   flex-shrink: 0;
