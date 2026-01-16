@@ -100,8 +100,23 @@ check_service() {
 # 检查端口是否被占用
 check_port() {
     local port=$1
-    if lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1; then
-        print_message "$YELLOW" "⚠ 端口 $port 已被占用"
+    local pid=$(lsof -ti:$port -sTCP:LISTEN 2>/dev/null)
+    if [ -n "$pid" ]; then
+        # 检查是否是我们的进程
+        if [ -f "$PID_FILE" ]; then
+            if grep -q "^$pid$" "$PID_FILE" 2>/dev/null; then
+                print_message "$YELLOW" "⚠ 端口 $port 被我们的进程占用 (PID: $pid)，将终止旧进程..."
+                kill $pid 2>/dev/null
+                sleep 1
+                # 再次检查
+                if ! lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1; then
+                    return 0
+                fi
+            fi
+        fi
+        print_message "$YELLOW" "⚠ 端口 $port 已被占用 (PID: $pid)"
+        print_message "$YELLOW" "   如果是macOS，可能是AirPlay Receiver占用了该端口"
+        print_message "$YELLOW" "   解决方法：系统设置 -> 通用 -> AirDrop与隔空播放 -> 关闭'隔空播放接收器'"
         return 1
     fi
     return 0
@@ -173,6 +188,31 @@ JWT_SECRET_KEY=jwt-secret-string
 REDIS_URL=redis://localhost:6379/0
 OLLAMA_BASE_URL=http://localhost:11434
 EOF
+    fi
+    
+    # 检查并清理端口5000
+    local port_pid=$(lsof -ti:5000 -sTCP:LISTEN 2>/dev/null)
+    if [ -n "$port_pid" ]; then
+        # 检查是否是我们的进程
+        if [ -f "$PID_FILE" ]; then
+            if grep -q "^$port_pid$" "$PID_FILE" 2>/dev/null; then
+                print_message "$YELLOW" "检测到旧的后端进程占用端口5000 (PID: $port_pid)，正在终止..."
+                kill $port_pid 2>/dev/null
+                sleep 2
+            else
+                print_message "$RED" "端口5000被其他进程占用 (PID: $port_pid)"
+                print_message "$YELLOW" "如果是macOS，可能是AirPlay Receiver占用了该端口"
+                print_message "$YELLOW" "解决方法：系统设置 -> 通用 -> AirDrop与隔空播放 -> 关闭'隔空播放接收器'"
+                print_message "$YELLOW" "或者运行: sudo lsof -ti:5000 | xargs kill -9"
+                return 1
+            fi
+        else
+            print_message "$RED" "端口5000被其他进程占用 (PID: $port_pid)"
+            print_message "$YELLOW" "如果是macOS，可能是AirPlay Receiver占用了该端口"
+            print_message "$YELLOW" "解决方法：系统设置 -> 通用 -> AirDrop与隔空播放 -> 关闭'隔空播放接收器'"
+            print_message "$YELLOW" "或者运行: sudo lsof -ti:5000 | xargs kill -9"
+            return 1
+        fi
     fi
     
     # 启动Flask应用（使用虚拟环境中的Python）
