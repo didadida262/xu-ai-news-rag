@@ -18,7 +18,18 @@ logger = logging.getLogger(__name__)
 @celery.task(name='services.tasks.fetch_all_data_sources')
 def fetch_all_data_sources():
     """定时任务：获取所有活跃的数据源"""
-    from app import create_app
+    import sys
+    import os
+    import importlib.util
+    
+    # 动态导入app.py中的create_app
+    backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    app_path = os.path.join(backend_dir, 'app.py')
+    spec = importlib.util.spec_from_file_location("app_module", app_path)
+    app_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(app_module)
+    create_app = app_module.create_app
+    
     from models.data_source import DataSource
     
     app = create_app()
@@ -47,7 +58,18 @@ def fetch_all_data_sources():
 @celery.task(name='services.tasks.fetch_data_source', bind=True, max_retries=3)
 def fetch_data_source(self, source_id: int):
     """抓取单个数据源"""
-    from app import create_app
+    import sys
+    import os
+    import importlib.util
+    
+    # 动态导入app.py中的create_app
+    backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    app_path = os.path.join(backend_dir, 'app.py')
+    spec = importlib.util.spec_from_file_location("app_module", app_path)
+    app_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(app_module)
+    create_app = app_module.create_app
+    
     from models.data_source import DataSource
     from models.document import Document
     from models.database import db
@@ -164,11 +186,21 @@ def fetch_data_source(self, source_id: int):
 @celery.task(name='services.tasks.fetch_with_agent')
 def fetch_with_agent(url: str, query: str = None):
     """使用智能代理抓取指定URL"""
-    from app import create_app
+    import sys
+    import os
+    import importlib.util
+    
+    # 动态导入app.py中的create_app
+    backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    app_path = os.path.join(backend_dir, 'app.py')
+    spec = importlib.util.spec_from_file_location("app_module", app_path)
+    app_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(app_module)
+    create_app = app_module.create_app
+    
     from models.document import Document
     from models.database import db
     from config.config import config
-    import os
     
     app = create_app()
     with app.app_context():
