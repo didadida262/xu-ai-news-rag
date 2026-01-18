@@ -14,13 +14,16 @@ logger = logging.getLogger(__name__)
 class RSSFetcher:
     """RSS订阅源获取器"""
     
-    def __init__(self, respect_robots=True, delay=1.0):
+    def __init__(self, respect_robots=True, delay=1.0, fetch_full_content=True):
         self.respect_robots = respect_robots
         self.delay = delay
+        self.fetch_full_content = fetch_full_content
         self.session = requests.Session()
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (compatible; NewsRAG/1.0; +http://example.com/bot)'
         })
+        # 使用WebFetcher来获取完整内容
+        self.web_fetcher = WebFetcher(respect_robots=respect_robots, delay=0.5) if fetch_full_content else None
     
     def fetch(self, url: str) -> List[Dict]:
         """获取RSS源内容"""
@@ -43,10 +46,40 @@ class RSSFetcher:
             
             articles = []
             for entry in feed.entries:
+                # 首先尝试从RSS feed中获取内容
+                # 有些RSS源会在content字段中提供完整内容
+                content = ''
+                if hasattr(entry, 'content') and entry.content:
+                    # 尝试获取content字段的完整内容
+                    for item in entry.content:
+                        if hasattr(item, 'value'):
+                            content = item.value
+                            break
+                
+                # 如果没有content，尝试summary或description
+                if not content:
+                    content = entry.get('summary', '') or entry.get('description', '')
+                
+                # 清理HTML标签，只保留纯文本
+                if content:
+                    content = self._clean_html(content)
+                
+                # 如果内容太短（可能是摘要），且启用了完整内容获取，则访问原始链接
+                link = entry.get('link', '')
+                if self.fetch_full_content and link and len(content) < 500:
+                    try:
+                        logger.info(f"RSS内容较短，尝试从原始链接获取完整内容: {link}")
+                        full_content = self._fetch_full_content(link)
+                        if full_content and len(full_content) > len(content):
+                            content = full_content
+                            logger.info(f"成功获取完整内容，长度: {len(content)}")
+                    except Exception as e:
+                        logger.warning(f"获取完整内容失败，使用RSS摘要: {e}")
+                
                 article = {
                     'title': entry.get('title', ''),
-                    'content': entry.get('summary', '') or entry.get('description', ''),
-                    'link': entry.get('link', ''),
+                    'content': content,
+                    'link': link,
                     'published': entry.get('published', '') or entry.get('updated', ''),
                     'author': entry.get('author', ''),
                     'tags': [tag.get('term', '') for tag in entry.get('tags', [])]
@@ -62,6 +95,38 @@ class RSSFetcher:
         except Exception as e:
             logger.error(f"获取RSS源 {url} 失败: {e}")
             return []
+    
+    def _fetch_full_content(self, url: str) -> str:
+        """从原始链接获取完整内容"""
+        if not self.web_fetcher:
+            return ''
+        
+        try:
+            result = self.web_fetcher.fetch(url)
+            return result.get('content', '')
+        except Exception as e:
+            logger.warning(f"获取完整内容失败 {url}: {e}")
+            return ''
+    
+    def _clean_html(self, html_content: str) -> str:
+        """清理HTML标签，只保留纯文本"""
+        try:
+            soup = BeautifulSoup(html_content, 'html.parser')
+            # 移除脚本和样式
+            for script in soup(['script', 'style']):
+                script.decompose()
+            # 获取纯文本
+            text = soup.get_text(separator='\n', strip=True)
+            # 清理多余空白
+            text = re.sub(r'\n\s*\n', '\n\n', text)  # 多个换行合并为两个
+            text = re.sub(r'[ \t]+', ' ', text)  # 多个空格合并为一个
+            return text.strip()
+        except Exception as e:
+            logger.warning(f"清理HTML失败: {e}，返回原始内容")
+            # 如果BeautifulSoup失败，使用简单的正则表达式移除标签
+            text = re.sub(r'<[^>]+>', '', html_content)
+            text = re.sub(r'\s+', ' ', text)
+            return text.strip()
     
     def _check_robots(self, url: str) -> bool:
         """检查robots.txt"""

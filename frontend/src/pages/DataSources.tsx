@@ -176,6 +176,23 @@ export default function DataSources() {
     }
   }
 
+  const toggleActive = async (source: DataSource) => {
+    try {
+      await dataSourceService.update(source.id, { is_active: !source.is_active })
+      const showToast = window.showToast
+      if (showToast) {
+        showToast(source.is_active ? '数据源已停用' : '数据源已启用', 'success')
+      }
+      loadSources()
+    } catch (error) {
+      const apiError = error as ApiError
+      const showToast = window.showToast
+      if (showToast) {
+        showToast(apiError.error || apiError.message || '更新失败', 'error')
+      }
+    }
+  }
+
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -298,6 +315,13 @@ export default function DataSources() {
                       title="编辑数据源配置信息"
                     >
                       编辑
+                    </button>
+                    <button 
+                      className={source.is_active ? "btn-disable" : "btn-enable"}
+                      onClick={() => toggleActive(source)}
+                      title={source.is_active ? "停用该数据源，停止自动抓取" : "启用该数据源，恢复自动抓取"}
+                    >
+                      {source.is_active ? '停用' : '启用'}
                     </button>
                     <button 
                       className="btn-delete danger" 

@@ -163,13 +163,14 @@ export default function Documents() {
                     </span>
                   </div>
                 </div>
-                {doc.summary && (
-                  <p className="document-summary">{doc.summary}</p>
+                {(doc.summary || doc.content) && (
+                  <div className="document-content-preview">
+                    {doc.summary 
+                      ? (doc.summary.length > 100 ? doc.summary.substring(0, 100) + '...' : doc.summary)
+                      : (doc.content.length > 100 ? doc.content.substring(0, 100) + '...' : doc.content)
+                    }
+                  </div>
                 )}
-                <div className="document-content-preview">
-                  {doc.content.substring(0, 200)}
-                  {doc.content.length > 200 && '...'}
-                </div>
                 <div className="document-footer">
                   <div className="document-tags">
                     {doc.tags && doc.tags.length > 0 && (
