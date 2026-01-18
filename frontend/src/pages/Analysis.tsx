@@ -13,6 +13,7 @@ import {
 } from 'chart.js'
 import { Bar, Pie, Line } from 'react-chartjs-2'
 import { analysisService, AnalysisParams, Keyword, SourceDistribution, TimeTrend } from '../services/analysis'
+import CustomSelect, { SelectOption } from '../components/CustomSelect'
 import './Analysis.css'
 
 ChartJS.register(
@@ -89,6 +90,15 @@ export default function Analysis() {
       loadAnalysisData()
     }, 100)
   }
+
+  // 来源类型选项
+  const sourceTypeOptions: SelectOption[] = [
+    { value: '', label: '全部' },
+    { value: 'rss', label: 'RSS' },
+    { value: 'web', label: '网页' },
+    { value: 'api', label: 'API' },
+    { value: 'upload', label: '上传' }
+  ]
 
   // 关键词柱状图数据
   const keywordsChartData = {
@@ -254,17 +264,13 @@ export default function Analysis() {
         </div>
         <div className="filter-group">
           <label>来源类型</label>
-          <select
+          <CustomSelect
             value={filters.source_type || ''}
-            onChange={(e) => handleFilterChange('source_type', e.target.value as any)}
+            onChange={(value) => handleFilterChange('source_type', value || undefined)}
+            options={sourceTypeOptions}
+            placeholder="全部"
             className="filter-select"
-          >
-            <option value="">全部</option>
-            <option value="rss">RSS</option>
-            <option value="web">网页</option>
-            <option value="api">API</option>
-            <option value="upload">上传</option>
-          </select>
+          />
         </div>
         <div className="filter-actions">
           <button onClick={handleApplyFilters} className="btn-apply">应用筛选</button>

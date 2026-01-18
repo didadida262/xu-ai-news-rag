@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { documentService, Document, DocumentListParams } from '../services/document'
+import CustomSelect, { SelectOption } from '../components/CustomSelect'
 import './Documents.css'
 
 interface ApiError {
@@ -89,6 +90,27 @@ export default function Documents() {
     return labels[type] || type.toUpperCase()
   }
 
+  // 筛选选项
+  const sourceTypeOptions: SelectOption[] = [
+    { value: '', label: '全部类型' },
+    { value: 'rss', label: 'RSS' },
+    { value: 'web', label: '网页' },
+    { value: 'api', label: 'API' },
+    { value: 'upload', label: '上传' }
+  ]
+
+  const processStatusOptions: SelectOption[] = [
+    { value: '', label: '全部状态' },
+    { value: 'true', label: '已处理' },
+    { value: 'false', label: '未处理' }
+  ]
+
+  const vectorizedStatusOptions: SelectOption[] = [
+    { value: '', label: '向量化状态' },
+    { value: 'true', label: '已向量化' },
+    { value: 'false', label: '未向量化' }
+  ]
+
   return (
     <div className="documents">
       <div className="page-header">
@@ -110,35 +132,27 @@ export default function Documents() {
           <button type="submit" className="search-btn">搜索</button>
         </form>
         <div className="filter-group">
-          <select
+          <CustomSelect
             value={filters.source_type || ''}
-            onChange={(e) => handleFilterChange('source_type', e.target.value)}
+            onChange={(value) => handleFilterChange('source_type', value || undefined)}
+            options={sourceTypeOptions}
+            placeholder="全部类型"
             className="filter-select"
-          >
-            <option value="">全部类型</option>
-            <option value="rss">RSS</option>
-            <option value="web">网页</option>
-            <option value="api">API</option>
-            <option value="upload">上传</option>
-          </select>
-          <select
+          />
+          <CustomSelect
             value={filters.is_processed !== undefined ? filters.is_processed.toString() : ''}
-            onChange={(e) => handleFilterChange('is_processed', e.target.value ? e.target.value === 'true' : undefined)}
+            onChange={(value) => handleFilterChange('is_processed', value ? value === 'true' : undefined)}
+            options={processStatusOptions}
+            placeholder="全部状态"
             className="filter-select"
-          >
-            <option value="">全部状态</option>
-            <option value="true">已处理</option>
-            <option value="false">未处理</option>
-          </select>
-          <select
+          />
+          <CustomSelect
             value={filters.is_vectorized !== undefined ? filters.is_vectorized.toString() : ''}
-            onChange={(e) => handleFilterChange('is_vectorized', e.target.value ? e.target.value === 'true' : undefined)}
+            onChange={(value) => handleFilterChange('is_vectorized', value ? value === 'true' : undefined)}
+            options={vectorizedStatusOptions}
+            placeholder="向量化状态"
             className="filter-select"
-          >
-            <option value="">向量化状态</option>
-            <option value="true">已向量化</option>
-            <option value="false">未向量化</option>
-          </select>
+          />
         </div>
       </div>
 
