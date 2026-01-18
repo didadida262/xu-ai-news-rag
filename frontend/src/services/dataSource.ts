@@ -13,7 +13,7 @@ export interface DataSource {
   fetch_count: number
   success_count: number
   error_count: number
-  config?: Record<string, any>
+  config?: Record<string, unknown>
 }
 
 export interface CreateDataSource {
@@ -22,7 +22,12 @@ export interface CreateDataSource {
   url: string
   description?: string
   fetch_interval?: number
-  config?: Record<string, any>
+  is_active?: boolean
+  config?: Record<string, unknown>
+}
+
+export interface UpdateDataSource extends Partial<CreateDataSource> {
+  is_active?: boolean
 }
 
 export const dataSourceService = {
@@ -38,7 +43,7 @@ export const dataSourceService = {
     return api.post('/data-sources', data)
   },
 
-  update: async (id: number, data: Partial<CreateDataSource>): Promise<DataSource> => {
+  update: async (id: number, data: UpdateDataSource): Promise<DataSource> => {
     return api.put(`/data-sources/${id}`, data)
   },
 
@@ -50,7 +55,7 @@ export const dataSourceService = {
     return api.post(`/data-sources/${id}/fetch`)
   },
 
-  stats: async (): Promise<any> => {
+  stats: async (): Promise<Record<string, unknown>> => {
     return api.get('/data-sources/stats')
   },
 }

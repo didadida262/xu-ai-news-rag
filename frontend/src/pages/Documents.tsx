@@ -2,6 +2,11 @@ import { useEffect, useState } from 'react'
 import { documentService, Document, DocumentListParams } from '../services/document'
 import './Documents.css'
 
+interface ApiError {
+  error?: string
+  message?: string
+}
+
 export default function Documents() {
   const [documents, setDocuments] = useState<Document[]>([])
   const [loading, setLoading] = useState(true)
@@ -57,8 +62,9 @@ export default function Documents() {
       const doc = await documentService.get(id)
       setSelectedDoc(doc)
       setShowDetail(true)
-    } catch (error: any) {
-      alert(error.error || '获取文档详情失败')
+    } catch (error) {
+      const apiError = error as ApiError
+      alert(apiError.error || apiError.message || '获取文档详情失败')
     }
   }
 
@@ -67,8 +73,9 @@ export default function Documents() {
     try {
       await documentService.delete(id)
       loadDocuments()
-    } catch (error: any) {
-      alert(error.error || '删除失败')
+    } catch (error) {
+      const apiError = error as ApiError
+      alert(apiError.error || apiError.message || '删除失败')
     }
   }
 

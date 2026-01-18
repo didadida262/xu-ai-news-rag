@@ -2,6 +2,11 @@ import { useEffect, useState, useRef } from 'react'
 import { dataSourceService, DataSource } from '../services/dataSource'
 import './DataSources.css'
 
+interface ApiError {
+  error?: string
+  message?: string
+}
+
 // 预设数据源模板
 const PRESET_SOURCES = [
   { name: '新浪新闻', type: 'rss' as const, url: 'http://rss.sina.com.cn/news/china.xml', description: '新浪新闻国内新闻RSS源' },
@@ -17,7 +22,7 @@ export default function DataSources() {
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing] = useState<DataSource | null>(null)
   const [selectedPreset, setSelectedPreset] = useState<string>('')
-  const refreshIntervalsRef = useRef<Map<number, NodeJS.Timeout>>(new Map())
+  const refreshIntervalsRef = useRef<Map<number, ReturnType<typeof setInterval>>>(new Map())
 
   useEffect(() => {
     loadSources()
@@ -81,16 +86,18 @@ export default function DataSources() {
       }, 2000)
       
       refreshIntervalsRef.current.set(id, interval)
-    } catch (error: any) {
-      alert(error.error || '启动失败')
+    } catch (error) {
+      const apiError = error as ApiError
+      alert(apiError.error || apiError.message || '启动失败')
     }
   }
   
   // 组件卸载时清除所有定时器
   useEffect(() => {
+    const intervals = refreshIntervalsRef.current
     return () => {
-      refreshIntervalsRef.current.forEach(interval => clearInterval(interval))
-      refreshIntervalsRef.current.clear()
+      intervals.forEach(interval => clearInterval(interval))
+      intervals.clear()
     }
   }, [])
 
@@ -99,8 +106,9 @@ export default function DataSources() {
     try {
       await dataSourceService.delete(id)
       loadSources()
-    } catch (error: any) {
-      alert(error.error || '删除失败')
+    } catch (error) {
+      const apiError = error as ApiError
+      alert(apiError.error || apiError.message || '删除失败')
     }
   }
 
@@ -108,8 +116,9 @@ export default function DataSources() {
     try {
       await dataSourceService.update(source.id, { is_active: !source.is_active })
       loadSources()
-    } catch (error: any) {
-      alert(error.error || '更新失败')
+    } catch (error) {
+      const apiError = error as ApiError
+      alert(apiError.error || apiError.message || '更新失败')
     }
   }
 
@@ -133,8 +142,9 @@ export default function DataSources() {
       setShowModal(false)
       setEditing(null)
       loadSources()
-    } catch (error: any) {
-      alert(error.error || '操作失败')
+    } catch (error) {
+      const apiError = error as ApiError
+      alert(apiError.error || apiError.message || '操作失败')
     }
   }
 
