@@ -414,7 +414,7 @@ export default function DataSources() {
                 <input
                   type="number"
                   name="fetch_interval"
-                  min={60}
+                  min={1}
                   defaultValue={editing?.fetch_interval || 3600}
                   placeholder="3600"
                 />
