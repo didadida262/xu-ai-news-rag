@@ -163,8 +163,8 @@ class FetchDataSource(Resource):
         """手动触发数据源抓取"""
         source = DataSource.query.get_or_404(source_id)
         
-        if not source.is_active:
-            return {'error': '数据源未激活'}, 400
+        # 手动抓取时，允许抓取未激活的数据源（前端会自动启用）
+        # 如果数据源未激活，任务内部会处理
         
         # 异步执行抓取任务
         task = fetch_data_source.delay(source_id)

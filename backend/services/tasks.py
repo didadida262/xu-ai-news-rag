@@ -115,20 +115,37 @@ def fetch_data_source(self, source_id: int):
             
             # 保存文章到数据库
             saved_count = 0
+            skipped_count = 0
             for article_data in articles:
                 try:
-                    # 检查是否已存在（基于URL）
+                    # 检查是否已存在（基于URL和标题的组合，更准确）
                     link = article_data.get('link', '')
+                    title = article_data.get('title', '未命名')
+                    
+                    # 如果URL存在，优先使用URL检查
                     if link:
-                        existing = Document.query.filter_by(source_url=link).first()
+                        existing = Document.query.filter_by(source_url=link, source_name=source.name).first()
                         if existing:
+                            logger.debug(f"文章已存在（基于URL）: {link}")
+                            skipped_count += 1
+                            continue
+                    
+                    # 如果URL不存在，使用标题和来源名称检查（避免重复标题）
+                    if title and title != '未命名':
+                        existing = Document.query.filter_by(
+                            title=title,
+                            source_name=source.name
+                        ).first()
+                        if existing:
+                            logger.debug(f"文章已存在（基于标题）: {title}")
+                            skipped_count += 1
                             continue
                     
                     # 创建文档
                     doc = Document(
-                        title=article_data.get('title', '未命名'),
+                        title=title,
                         content=article_data.get('content', '') or article_data.get('summary', ''),
-                        summary=article_data.get('summary', '') or article_data.get('content', '')[:200],
+                        summary=article_data.get('summary', '') or (article_data.get('content', '')[:200] if article_data.get('content') else ''),
                         source_type=source.source_type,
                         source_url=link or source.url,
                         source_name=source.name,
@@ -142,9 +159,10 @@ def fetch_data_source(self, source_id: int):
                     
                     db.session.add(doc)
                     saved_count += 1
+                    logger.debug(f"保存新文章: {title[:50]}...")
                     
                 except Exception as e:
-                    logger.error(f"保存文章失败: {e}")
+                    logger.error(f"保存文章失败: {e}, 文章标题: {article_data.get('title', '未知')}")
                     continue
             
             # 提交文档事务
@@ -159,13 +177,14 @@ def fetch_data_source(self, source_id: int):
                 error_message=None
             )
             
-            logger.info(f"数据源 {source.name} 抓取完成，找到 {len(articles)} 篇文章，保存 {saved_count} 篇，fetch_count已更新为 {source.fetch_count}")
+            logger.info(f"数据源 {source.name} 抓取完成，找到 {len(articles)} 篇文章，保存 {saved_count} 篇，跳过 {skipped_count} 篇（已存在），fetch_count已更新为 {source.fetch_count}")
             
             return {
                 'status': 'success',
                 'source_id': source_id,
                 'articles_found': len(articles),
-                'articles_saved': saved_count
+                'articles_saved': saved_count,
+                'articles_skipped': skipped_count
             }
             
         except Exception as e:

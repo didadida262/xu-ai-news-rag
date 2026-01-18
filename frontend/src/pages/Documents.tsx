@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { documentService, Document, DocumentListParams } from '../services/document'
 import CustomSelect, { SelectOption } from '../components/CustomSelect'
 import './Documents.css'
@@ -25,9 +25,34 @@ export default function Documents() {
   })
   const [selectedDoc, setSelectedDoc] = useState<Document | null>(null)
   const [showDetail, setShowDetail] = useState(false)
+  const previousTotalRef = useRef<number>(0)
 
   useEffect(() => {
     loadDocuments()
+  }, [filters])
+
+  // 定期刷新文档列表（每30秒），如果总数发生变化则立即刷新
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const response = await documentService.list(filters)
+        if (response.pagination.total !== previousTotalRef.current) {
+          // 总数发生变化，重新加载
+          previousTotalRef.current = response.pagination.total
+          await loadDocuments()
+        } else {
+          // 只更新总数，不重新加载整个列表
+          setPagination(prev => ({
+            ...prev,
+            total: response.pagination.total
+          }))
+        }
+      } catch (error) {
+        console.error('刷新文档列表失败:', error)
+      }
+    }, 30000) // 每30秒检查一次
+
+    return () => clearInterval(interval)
   }, [filters])
 
   const loadDocuments = async () => {
@@ -36,6 +61,7 @@ export default function Documents() {
       const response = await documentService.list(filters)
       setDocuments(response.items)
       setPagination(response.pagination)
+      previousTotalRef.current = response.pagination.total
     } catch (error) {
       console.error('加载文档失败:', error)
     } finally {

@@ -35,6 +35,10 @@ def create_app(config_name=None):
     config_name = config_name or os.environ.get('FLASK_ENV', 'development')
     app.config.from_object(config[config_name])
     
+    # 应用数据库连接池配置
+    if hasattr(config[config_name], 'SQLALCHEMY_ENGINE_OPTIONS'):
+        app.config['SQLALCHEMY_ENGINE_OPTIONS'] = config[config_name].SQLALCHEMY_ENGINE_OPTIONS
+    
     # 初始化扩展
     db.init_app(app)
     jwt.init_app(app)
