@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from './hooks/useAuth'
 import Layout from './components/Layout'
 import Loading from './components/Loading'
+import ToastContainer from './components/Toast'
 import Login from './pages/Login'
 import Home from './pages/Home'
 import DataSources from './pages/DataSources'
@@ -58,6 +59,7 @@ function AppContent() {
 
   return (
     <>
+      <ToastContainer />
       <Routes location={location}>
         <Route path="/login" element={<Login />} />
         <Route

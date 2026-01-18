@@ -7,6 +7,12 @@ interface ApiError {
   message?: string
 }
 
+declare global {
+  interface Window {
+    showToast?: (message: string, type?: 'success' | 'error' | 'warning' | 'info', duration?: number) => void
+  }
+}
+
 // 预设数据源模板
 const PRESET_SOURCES = [
   { name: '新浪新闻', type: 'rss' as const, url: 'http://rss.sina.com.cn/news/china.xml', description: '新浪新闻国内新闻RSS源' },
@@ -47,12 +53,56 @@ export default function DataSources() {
         clearInterval(existingInterval)
       }
       
+      // 查找当前数据源
+      const currentSource = sources.find(s => s.id === id)
+      if (!currentSource) {
+        const showToast = window.showToast
+        if (showToast) {
+          showToast('数据源不存在', 'error')
+        }
+        return
+      }
+      
+      // 如果数据源未激活，先启用它
+      if (!currentSource.is_active) {
+        const showToast = window.showToast
+        if (showToast) {
+          showToast('数据源未激活，正在自动启用...', 'info', 2000)
+        }
+        
+        try {
+          await dataSourceService.update(id, { is_active: true })
+          if (showToast) {
+            showToast('数据源已启用', 'success', 2000)
+          }
+          // 刷新数据源列表
+          await loadSources()
+        } catch (error) {
+          const apiError = error as ApiError
+          const showToast = window.showToast
+          if (showToast) {
+            showToast(apiError.error || apiError.message || '启用失败', 'error')
+          }
+          return
+        }
+      }
+      
+      // 执行抓取
+      const showToast = window.showToast
+      if (showToast) {
+        showToast('正在启动抓取任务...', 'info', 2000)
+      }
+      
       await dataSourceService.fetch(id)
       
+      if (showToast) {
+        showToast('抓取任务已启动', 'success')
+      }
+      
       // 记录当前抓取次数，用于检测数据是否已更新
-      const currentSource = sources.find(s => s.id === id)
-      const initialFetchCount = currentSource?.fetch_count || 0
-      const initialLastFetch = currentSource?.last_fetch
+      const updatedSource = sources.find(s => s.id === id)
+      const initialFetchCount = updatedSource?.fetch_count || 0
+      const initialLastFetch = updatedSource?.last_fetch
       
       // 立即刷新一次
       await loadSources()
@@ -77,6 +127,10 @@ export default function DataSources() {
             // 数据已更新，停止刷新
             clearInterval(interval)
             refreshIntervalsRef.current.delete(id)
+            const showToast = window.showToast
+            if (showToast) {
+              showToast('抓取完成', 'success')
+            }
           } else if (refreshCount >= maxRefreshes) {
             // 达到最大刷新次数，停止刷新
             clearInterval(interval)
@@ -88,7 +142,10 @@ export default function DataSources() {
       refreshIntervalsRef.current.set(id, interval)
     } catch (error) {
       const apiError = error as ApiError
-      alert(apiError.error || apiError.message || '启动失败')
+      const showToast = window.showToast
+      if (showToast) {
+        showToast(apiError.error || apiError.message || '启动失败', 'error')
+      }
     }
   }
   
@@ -105,22 +162,20 @@ export default function DataSources() {
     if (!confirm('确定要删除这个数据源吗？')) return
     try {
       await dataSourceService.delete(id)
+      const showToast = window.showToast
+      if (showToast) {
+        showToast('数据源已删除', 'success')
+      }
       loadSources()
     } catch (error) {
       const apiError = error as ApiError
-      alert(apiError.error || apiError.message || '删除失败')
+      const showToast = window.showToast
+      if (showToast) {
+        showToast(apiError.error || apiError.message || '删除失败', 'error')
+      }
     }
   }
 
-  const toggleActive = async (source: DataSource) => {
-    try {
-      await dataSourceService.update(source.id, { is_active: !source.is_active })
-      loadSources()
-    } catch (error) {
-      const apiError = error as ApiError
-      alert(apiError.error || apiError.message || '更新失败')
-    }
-  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -141,10 +196,17 @@ export default function DataSources() {
       }
       setShowModal(false)
       setEditing(null)
+      const showToast = window.showToast
+      if (showToast) {
+        showToast(editing ? '数据源已更新' : '数据源已创建', 'success')
+      }
       loadSources()
     } catch (error) {
       const apiError = error as ApiError
-      alert(apiError.error || apiError.message || '操作失败')
+      const showToast = window.showToast
+      if (showToast) {
+        showToast(apiError.error || apiError.message || '操作失败', 'error')
+      }
     }
   }
 
@@ -236,13 +298,6 @@ export default function DataSources() {
                       title="编辑数据源配置信息"
                     >
                       编辑
-                    </button>
-                    <button 
-                      className={source.is_active ? "btn-disable" : "btn-enable"}
-                      onClick={() => toggleActive(source)}
-                      title={source.is_active ? "停用该数据源，停止自动抓取" : "启用该数据源，恢复自动抓取"}
-                    >
-                      {source.is_active ? '停用' : '启用'}
                     </button>
                     <button 
                       className="btn-delete danger" 
