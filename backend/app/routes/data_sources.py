@@ -129,13 +129,28 @@ class DataSourceDetail(Resource):
     
     @jwt_required()
     def delete(self, source_id):
-        """删除数据源"""
+        """删除数据源（级联删除相关文档）"""
+        from models.document import Document
+        
         source = DataSource.query.get_or_404(source_id)
+        source_name = source.name
         
         try:
+            # 查找并删除所有相关的文档
+            related_documents = Document.query.filter_by(source_name=source_name).all()
+            deleted_doc_count = len(related_documents)
+            
+            for doc in related_documents:
+                db.session.delete(doc)
+            
+            # 删除数据源
             db.session.delete(source)
             db.session.commit()
-            return {'message': '删除成功'}, 200
+            
+            return {
+                'message': '删除成功',
+                'deleted_documents': deleted_doc_count
+            }, 200
         except Exception as e:
             db.session.rollback()
             return {'error': f'删除失败: {str(e)}'}, 500
