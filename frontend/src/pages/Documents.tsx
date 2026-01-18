@@ -74,9 +74,55 @@ export default function Documents() {
     try {
       await documentService.delete(id)
       loadDocuments()
+      const showToast = window.showToast
+      if (showToast) {
+        showToast('文档删除成功', 'success')
+      }
     } catch (error) {
       const apiError = error as ApiError
-      alert(apiError.error || apiError.message || '删除失败')
+      const showToast = window.showToast
+      if (showToast) {
+        showToast(apiError.error || apiError.message || '删除失败', 'error')
+      }
+    }
+  }
+
+  const handleDeleteAll = async () => {
+    if (pagination.total === 0) {
+      const showToast = window.showToast
+      if (showToast) {
+        showToast('没有可删除的文档', 'warning')
+      }
+      return
+    }
+
+    if (!confirm(`确定要删除所有 ${pagination.total} 个文档吗？此操作不可恢复，请谨慎操作！`)) return
+
+    try {
+      // 获取所有文档ID
+      const allDocuments = await documentService.list({ page: 1, per_page: pagination.total })
+      const ids = allDocuments.items.map(doc => doc.id)
+      
+      if (ids.length === 0) {
+        const showToast = window.showToast
+        if (showToast) {
+          showToast('没有可删除的文档', 'warning')
+        }
+        return
+      }
+
+      const result = await documentService.batchDelete(ids)
+      loadDocuments()
+      const showToast = window.showToast
+      if (showToast) {
+        showToast(result.message || `成功删除所有 ${result.deleted_count} 个文档`, 'success')
+      }
+    } catch (error) {
+      const apiError = error as ApiError
+      const showToast = window.showToast
+      if (showToast) {
+        showToast(apiError.error || apiError.message || '删除所有文档失败', 'error')
+      }
     }
   }
 
@@ -116,6 +162,15 @@ export default function Documents() {
       <div className="page-header">
         <h1>文档列表</h1>
         <div className="header-actions">
+          {pagination.total > 0 && (
+            <button 
+              onClick={handleDeleteAll}
+              className="btn-delete-all"
+              title={`删除所有 ${pagination.total} 个文档`}
+            >
+              删除所有
+            </button>
+          )}
           <span className="total-count">共 {pagination.total} 条</span>
         </div>
       </div>

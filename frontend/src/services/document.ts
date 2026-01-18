@@ -63,6 +63,10 @@ export const documentService = {
     return api.delete(`/documents/${id}`)
   },
 
+  batchDelete: async (ids: number[]): Promise<{ message: string; deleted_count: number }> => {
+    return api.post('/documents/batch-delete', { ids: ids.join(',') })
+  },
+
   stats: async (): Promise<any> => {
     return api.get('/documents/stats')
   },

@@ -148,6 +148,47 @@ class DocumentDetail(Resource):
             return {'error': f'删除文档失败: {str(e)}'}, 500
 
 
+@documents_ns.route('/batch-delete')
+class BatchDeleteDocuments(Resource):
+    @jwt_required()
+    @documents_ns.doc(params={
+        'ids': '文档ID列表，用逗号分隔（如：1,2,3）'
+    })
+    def post(self):
+        """批量删除文档"""
+        try:
+            ids_str = request.args.get('ids') or request.get_json().get('ids', '')
+            if not ids_str:
+                return {'error': '请提供要删除的文档ID列表'}, 400
+            
+            # 解析ID列表
+            try:
+                ids = [int(id.strip()) for id in ids_str.split(',') if id.strip()]
+            except ValueError:
+                return {'error': '文档ID格式错误'}, 400
+            
+            if not ids:
+                return {'error': '请提供有效的文档ID'}, 400
+            
+            # 查找并删除文档
+            documents = Document.query.filter(Document.id.in_(ids)).all()
+            deleted_count = len(documents)
+            
+            for doc in documents:
+                db.session.delete(doc)
+            
+            db.session.commit()
+            
+            return {
+                'message': f'成功删除 {deleted_count} 个文档',
+                'deleted_count': deleted_count
+            }, 200
+            
+        except Exception as e:
+            db.session.rollback()
+            return {'error': f'批量删除失败: {str(e)}'}, 500
+
+
 @documents_ns.route('/stats')
 class DocumentStats(Resource):
     @jwt_required()

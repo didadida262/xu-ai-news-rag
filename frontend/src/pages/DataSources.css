@@ -346,10 +346,26 @@
   box-shadow: 0 2px 8px rgba(241, 196, 15, 0.2);
 }
 
-.actions button.btn-edit:hover {
+.actions button.btn-edit:hover:not(.disabled):not(:disabled) {
   background: linear-gradient(135deg, rgba(241, 196, 15, 0.3) 0%, rgba(243, 156, 18, 0.3) 100%);
   box-shadow: 0 4px 12px rgba(241, 196, 15, 0.4);
   transform: translateY(-2px);
+}
+
+.actions button.btn-edit.disabled,
+.actions button.btn-edit:disabled {
+  background: rgba(100, 100, 100, 0.2) !important;
+  color: #666 !important;
+  border-color: rgba(100, 100, 100, 0.3) !important;
+  cursor: not-allowed !important;
+  opacity: 0.5;
+}
+
+.actions button.btn-edit.disabled:hover,
+.actions button.btn-edit:disabled:hover {
+  background: rgba(100, 100, 100, 0.2) !important;
+  box-shadow: 0 2px 8px rgba(149, 165, 166, 0.2) !important;
+  transform: none !important;
 }
 
 /* 停用按钮 - 灰色 */
