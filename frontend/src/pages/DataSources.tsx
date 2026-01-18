@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { dataSourceService, DataSource } from '../services/dataSource'
+import CustomSelect from '../components/CustomSelect'
 import './DataSources.css'
 
 interface ApiError {
@@ -28,7 +29,9 @@ export default function DataSources() {
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing] = useState<DataSource | null>(null)
   const [selectedPreset, setSelectedPreset] = useState<string>('')
+  const [sourceType, setSourceType] = useState<string>('rss')
   const refreshIntervalsRef = useRef<Map<number, ReturnType<typeof setInterval>>>(new Map())
+  const formRef = useRef<HTMLFormElement>(null)
 
   useEffect(() => {
     loadSources()
@@ -199,7 +202,7 @@ export default function DataSources() {
     const formData = new FormData(e.currentTarget)
     const data = {
       name: formData.get('name') as string,
-      source_type: formData.get('source_type') as 'rss' | 'web' | 'api',
+      source_type: (formData.get('source_type') as 'rss' | 'web' | 'api') || sourceType as 'rss' | 'web' | 'api',
       url: formData.get('url') as string,
       description: formData.get('description') as string || '',
       fetch_interval: parseInt(formData.get('fetch_interval') as string) || 3600,
@@ -213,6 +216,8 @@ export default function DataSources() {
       }
       setShowModal(false)
       setEditing(null)
+      setSelectedPreset('')
+      setSourceType('rss')
       const showToast = window.showToast
       if (showToast) {
         showToast(editing ? '数据源已更新' : '数据源已创建', 'success')
@@ -230,27 +235,38 @@ export default function DataSources() {
   const handleEdit = (source: DataSource) => {
     setEditing(source)
     setSelectedPreset('')
+    setSourceType(source.source_type)
     setShowModal(true)
   }
 
-  const handlePresetChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const presetId = e.target.value
+  const handlePresetChange = (presetId: string) => {
     setSelectedPreset(presetId)
-    if (presetId) {
+    if (presetId && formRef.current) {
       const preset = PRESET_SOURCES.find(p => `${p.name}-${p.type}` === presetId)
       if (preset) {
-        const form = e.target.closest('form')
-        if (form) {
-          const nameInput = form.querySelector<HTMLInputElement>('input[name="name"]')
-          const typeSelect = form.querySelector<HTMLSelectElement>('select[name="source_type"]')
-          const urlInput = form.querySelector<HTMLInputElement>('input[name="url"]')
-          const descTextarea = form.querySelector<HTMLTextAreaElement>('textarea[name="description"]')
-          
-          if (nameInput) nameInput.value = preset.name
-          if (typeSelect) typeSelect.value = preset.type
-          if (urlInput) urlInput.value = preset.url
-          if (descTextarea) descTextarea.value = preset.description
-        }
+        const nameInput = formRef.current.querySelector<HTMLInputElement>('input[name="name"]')
+        const urlInput = formRef.current.querySelector<HTMLInputElement>('input[name="url"]')
+        const descTextarea = formRef.current.querySelector<HTMLTextAreaElement>('textarea[name="description"]')
+        
+        if (nameInput) nameInput.value = preset.name
+        if (urlInput) urlInput.value = preset.url
+        if (descTextarea) descTextarea.value = preset.description || ''
+        
+        // 更新类型选择
+        setSourceType(preset.type)
+      }
+    } else {
+      setSourceType('rss')
+    }
+  }
+
+  const handleSourceTypeChange = (value: string) => {
+    setSourceType(value)
+    if (formRef.current) {
+      // 更新隐藏的 input 值
+      const hiddenInput = formRef.current.querySelector<HTMLInputElement>('input[name="source_type"]')
+      if (hiddenInput) {
+        hiddenInput.value = value
       }
     }
   }
@@ -345,6 +361,8 @@ export default function DataSources() {
         <div className="modal-overlay" onClick={() => {
           setShowModal(false)
           setEditing(null)
+          setSelectedPreset('')
+          setSourceType('rss')
         }}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
@@ -352,24 +370,27 @@ export default function DataSources() {
               <button className="modal-close" onClick={() => {
                 setShowModal(false)
                 setEditing(null)
+                setSelectedPreset('')
+                setSourceType('rss')
               }}>×</button>
             </div>
-            <form onSubmit={handleSubmit}>
+            <form ref={formRef} onSubmit={handleSubmit}>
               {!editing && (
                 <div className="form-group">
                   <label>快速选择（可选）</label>
-                  <select 
-                    value={selectedPreset} 
+                  <CustomSelect
+                    value={selectedPreset}
                     onChange={handlePresetChange}
+                    options={[
+                      { value: '', label: '-- 选择预设数据源 --' },
+                      ...PRESET_SOURCES.map((preset) => ({
+                        value: `${preset.name}-${preset.type}`,
+                        label: `${preset.name} (${preset.type.toUpperCase()})`
+                      }))
+                    ]}
+                    placeholder="-- 选择预设数据源 --"
                     className="preset-select"
-                  >
-                    <option value="">-- 选择预设数据源 --</option>
-                    {PRESET_SOURCES.map((preset) => (
-                      <option key={`${preset.name}-${preset.type}`} value={`${preset.name}-${preset.type}`}>
-                        {preset.name} ({preset.type.toUpperCase()})
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
               )}
               <div className="form-group">
@@ -384,11 +405,18 @@ export default function DataSources() {
               </div>
               <div className="form-group">
                 <label>类型 *</label>
-                <select name="source_type" required defaultValue={editing?.source_type || 'rss'}>
-                  <option value="rss">RSS</option>
-                  <option value="web">网页</option>
-                  <option value="api">API（智能代理）</option>
-                </select>
+                <input type="hidden" name="source_type" value={sourceType} />
+                <CustomSelect
+                  value={sourceType}
+                  onChange={handleSourceTypeChange}
+                  options={[
+                    { value: 'rss', label: 'RSS' },
+                    { value: 'web', label: '网页' },
+                    { value: 'api', label: 'API（智能代理）' }
+                  ]}
+                  placeholder="请选择类型"
+                  className="source-type-select"
+                />
               </div>
               <div className="form-group">
                 <label>URL *</label>
@@ -423,6 +451,8 @@ export default function DataSources() {
                 <button type="button" onClick={() => {
                   setShowModal(false)
                   setEditing(null)
+                  setSelectedPreset('')
+                  setSourceType('rss')
                 }}>取消</button>
                 <button type="submit">{editing ? '更新' : '创建'}</button>
               </div>

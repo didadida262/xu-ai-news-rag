@@ -609,11 +609,17 @@
   box-sizing: border-box;
 }
 
-.preset-select {
+/* 表单中的下拉框占满整行 */
+.form-group .custom-select {
+  width: 100% !important;
+}
+
+.preset-select .custom-select-trigger {
   background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%) !important;
   border-color: rgba(102, 126, 234, 0.5) !important;
   font-weight: 500;
 }
+
 
 .form-group input:focus,
 .form-group select:focus,
