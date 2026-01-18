@@ -260,9 +260,9 @@ start_celery() {
         print_message "$YELLOW" "⚠ Redis未运行，Celery任务可能无法正常工作"
     fi
     
-    # 启动Celery Worker
-    print_message "$GREEN" "启动Celery Worker..."
-    nohup "$BACKEND_DIR/venv/bin/python" -m celery -A celery_app worker --loglevel=info > "$CELERY_LOG" 2>&1 &
+    # 启动Celery Worker (限制并发数为2，减少数据库连接数)
+    print_message "$GREEN" "启动Celery Worker (并发数: 2)..."
+    nohup "$BACKEND_DIR/venv/bin/python" -m celery -A celery_app worker --loglevel=info --concurrency=2 > "$CELERY_LOG" 2>&1 &
     CELERY_PID=$!
     echo $CELERY_PID >> "$PID_FILE"
     
