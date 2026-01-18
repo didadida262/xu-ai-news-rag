@@ -166,7 +166,17 @@ def fetch_data_source(self, source_id: int):
                     continue
             
             # 提交文档事务
-            db.session.commit()
+            try:
+                db.session.commit()
+                logger.info(f"数据库事务提交成功，保存了 {saved_count} 篇文档")
+            except Exception as commit_error:
+                logger.error(f"数据库事务提交失败: {commit_error}")
+                db.session.rollback()
+                raise
+            
+            # 验证文档是否真的保存到数据库
+            actual_count = Document.query.filter_by(source_name=source.name).count()
+            logger.info(f"验证：数据库中 {source.name} 的文档数量为 {actual_count}")
             
             # 重新获取数据源对象（避免过期）
             source = DataSource.query.get(source_id)
@@ -177,7 +187,7 @@ def fetch_data_source(self, source_id: int):
                 error_message=None
             )
             
-            logger.info(f"数据源 {source.name} 抓取完成，找到 {len(articles)} 篇文章，保存 {saved_count} 篇，跳过 {skipped_count} 篇（已存在），fetch_count已更新为 {source.fetch_count}")
+            logger.info(f"数据源 {source.name} 抓取完成，找到 {len(articles)} 篇文章，保存 {saved_count} 篇，跳过 {skipped_count} 篇（已存在），数据库中实际有 {actual_count} 篇，fetch_count已更新为 {source.fetch_count}")
             
             return {
                 'status': 'success',

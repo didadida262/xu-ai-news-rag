@@ -31,13 +31,14 @@ export default function Documents() {
     loadDocuments()
   }, [filters])
 
-  // 定期刷新文档列表（每30秒），如果总数发生变化则立即刷新
+  // 定期刷新文档列表（每5秒），如果总数发生变化则立即刷新
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
         const response = await documentService.list(filters)
         if (response.pagination.total !== previousTotalRef.current) {
           // 总数发生变化，重新加载
+          console.log(`文档总数变化: ${previousTotalRef.current} -> ${response.pagination.total}，重新加载`)
           previousTotalRef.current = response.pagination.total
           await loadDocuments()
         } else {
@@ -50,7 +51,7 @@ export default function Documents() {
       } catch (error) {
         console.error('刷新文档列表失败:', error)
       }
-    }, 30000) // 每30秒检查一次
+    }, 5000) // 每5秒检查一次（更频繁的检查）
 
     return () => clearInterval(interval)
   }, [filters])
@@ -58,12 +59,31 @@ export default function Documents() {
   const loadDocuments = async () => {
     try {
       setLoading(true)
+      console.log('加载文档，筛选条件:', filters)
       const response = await documentService.list(filters)
-      setDocuments(response.items)
-      setPagination(response.pagination)
+      console.log('文档列表响应:', {
+        total: response.pagination.total,
+        items: response.items.length,
+        page: response.pagination.page,
+        items_preview: response.items.slice(0, 3).map(d => ({ id: d.id, title: d.title }))
+      })
+      
+      // 强制更新状态（使用展开运算符确保React检测到变化）
+      setDocuments([...response.items])
+      setPagination({ ...response.pagination })
       previousTotalRef.current = response.pagination.total
+      
+      // 如果总数大于0但items为空，可能是分页问题，尝试加载第一页
+      if (response.pagination.total > 0 && response.items.length === 0 && filters.page !== 1) {
+        console.warn('文档总数大于0但当前页无数据，尝试加载第一页')
+        setFilters({ ...filters, page: 1 })
+      }
     } catch (error) {
       console.error('加载文档失败:', error)
+      const showToast = window.showToast
+      if (showToast) {
+        showToast('加载文档失败，请刷新页面重试', 'error')
+      }
     } finally {
       setLoading(false)
     }

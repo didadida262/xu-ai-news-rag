@@ -107,6 +107,11 @@ class DocumentsList(Resource):
                 page=page, per_page=per_page, error_out=False
             )
             
+            # 记录查询日志
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"文档列表查询: 总数={pagination.total}, 当前页={page}, 每页={per_page}, 筛选条件: source_type={source_type}, search={search}, is_processed={is_processed}, is_vectorized={is_vectorized}")
+            
             return {
                 'items': [doc.to_dict() for doc in pagination.items],
                 'pagination': {
