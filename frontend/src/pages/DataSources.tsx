@@ -244,10 +244,9 @@ export default function DataSources() {
                 <td>
                   <div className="actions">
                     <button 
-                      className={`btn-edit ${source.is_active ? 'disabled' : ''}`}
-                      onClick={() => !source.is_active && handleEdit(source)}
-                      disabled={source.is_active}
-                      title={source.is_active ? '数据源已启用，请先停用后再编辑' : '编辑数据源配置信息'}
+                      className="btn-edit"
+                      onClick={() => handleEdit(source)}
+                      title="编辑数据源配置信息"
                     >
                       编辑
                     </button>
