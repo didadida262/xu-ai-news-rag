@@ -154,7 +154,67 @@ class WebFetcher:
         })
     
     def fetch(self, url: str, config: Optional[Dict] = None) -> Dict:
-        """抓取网页内容"""
+        """抓取单页内容（向后兼容：返回单篇文章字典）"""
+        return self._fetch_single(url, config)
+
+    def fetch_list(self, url: str, config: Optional[Dict] = None) -> List[Dict]:
+        """
+        抓取列表页并遍历详情页：
+        config 可选字段：
+          - list_selector: 列表容器选择器（必填）
+          - link_selector: 列表内链接选择器，默认 'a'
+          - max_links: 最大抓取链接数，默认 5
+          - detail_config: 详情页选择器配置（同 fetch 的 config）
+        """
+        config = config or {}
+        list_selector = config.get('list_selector')
+        link_selector = config.get('link_selector', 'a')
+        max_links = int(config.get('max_links', 5))
+        detail_config = config.get('detail_config') or config
+
+        if not list_selector:
+            logger.warning(f"未提供 list_selector，无法进行列表页解析: {url}")
+            return []
+
+        try:
+            if self.respect_robots and not self._check_robots(url):
+                logger.warning(f"列表页 {url} 被robots.txt禁止访问")
+                return []
+
+            response = self.session.get(url, timeout=30)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.content, 'html.parser')
+
+            container = soup.select_one(list_selector)
+            if not container:
+                logger.warning(f"列表页未找到容器 {list_selector}: {url}")
+                return []
+
+            links = []
+            for a in container.select(link_selector):
+                href = a.get('href')
+                if not href:
+                    continue
+                full = urljoin(url, href)
+                # 去重，保持顺序
+                if full not in links:
+                    links.append(full)
+                if len(links) >= max_links:
+                    break
+
+            articles: List[Dict] = []
+            for link in links:
+                art = self._fetch_single(link, detail_config)
+                if art:
+                    articles.append(art)
+
+            return articles
+        except Exception as e:
+            logger.error(f"抓取列表页 {url} 失败: {e}")
+            return []
+
+    def _fetch_single(self, url: str, config: Optional[Dict] = None) -> Dict:
+        """抓取单个详情页内容"""
         try:
             # 检查robots.txt
             if self.respect_robots:

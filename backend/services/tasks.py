@@ -106,13 +106,18 @@ def fetch_data_source(self, source_id: int):
             elif source.source_type == 'web':
                 fetcher = WebFetcher()
                 config = source.config or {}
-                article = fetcher.fetch(source.url, config)
-                if article:
-                    articles = [article]
-                    logger.info(f"网页抓取完成，获取到 1 篇文章")
+                # 如果配置了列表选择器，则进行列表页解析 + 详情页遍历
+                if config.get('list_selector'):
+                    articles = fetcher.fetch_list(source.url, config)
+                    logger.info(f"网页列表抓取完成，获取到 {len(articles)} 篇文章")
                 else:
-                    articles = []
-                    logger.warning(f"网页抓取未获取到内容")
+                    article = fetcher.fetch(source.url, config)
+                    if article:
+                        articles = [article]
+                        logger.info(f"网页抓取完成，获取到 1 篇文章")
+                    else:
+                        articles = []
+                        logger.warning(f"网页抓取未获取到内容")
                     
             elif source.source_type == 'api':
                 # API类型暂不实现

@@ -10,10 +10,10 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     # 数据库连接池配置
     SQLALCHEMY_ENGINE_OPTIONS = {
-        'pool_size': 10,
-        'pool_recycle': 3600,
-        'pool_pre_ping': True,
-        'max_overflow': 20
+        'pool_size': 5,  # 减小基础连接池大小
+        'pool_recycle': 1800,  # 30分钟回收连接，避免长时间占用
+        'pool_pre_ping': True,  # 连接前检查，自动恢复失效连接
+        'max_overflow': 5  # 减小最大溢出连接数
     }
     
     # JWT配置

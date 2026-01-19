@@ -4,8 +4,9 @@ import { useAuth } from '../hooks/useAuth'
 import './Login.css'
 
 export default function Login() {
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
+  // 默认填充账号密码，便于快速登录
+  const [username, setUsername] = useState('admin')
+  const [password, setPassword] = useState('admin123')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const { login, isAuthenticated, loading: authLoading } = useAuth()

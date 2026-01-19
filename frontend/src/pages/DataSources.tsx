@@ -20,6 +20,16 @@ const PRESET_SOURCES = [
   { name: '人民网首页（网页示例）', type: 'web' as const, url: 'https://www.people.com.cn/', description: '示例网页抓取：人民网首页要闻' }
 ]
 
+const DEFAULT_WEB_LIST_CONFIG = `{
+  "list_selector": ".news_list, .list, .headline",
+  "link_selector": "a",
+  "max_links": 5,
+  "detail_config": {
+    "title_selector": "h1, title",
+    "content_selector": "article, .content, main, .post-content"
+  }
+}`
+
 export default function DataSources() {
   const [sources, setSources] = useState<DataSource[]>([])
   const [loading, setLoading] = useState(true)
@@ -27,6 +37,7 @@ export default function DataSources() {
   const [editing, setEditing] = useState<DataSource | null>(null)
   const [selectedPreset, setSelectedPreset] = useState<string>('')
   const [sourceType, setSourceType] = useState<string>('rss')
+  const [configText, setConfigText] = useState<string>(DEFAULT_WEB_LIST_CONFIG)
   const formRef = useRef<HTMLFormElement>(null)
 
   useEffect(() => {
@@ -90,12 +101,28 @@ export default function DataSources() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
+
+    // 解析配置 JSON
+    let parsedConfig: Record<string, unknown> = {}
+    if (configText && configText.trim()) {
+      try {
+        parsedConfig = JSON.parse(configText)
+      } catch (err) {
+        const showToast = window.showToast
+        if (showToast) {
+          showToast('配置 JSON 解析失败，请检查格式', 'error')
+        }
+        return
+      }
+    }
+
     const data = {
       name: formData.get('name') as string,
       source_type: (formData.get('source_type') as 'rss' | 'web' | 'api') || sourceType as 'rss' | 'web' | 'api',
       url: formData.get('url') as string,
       description: formData.get('description') as string || '',
       fetch_interval: parseInt(formData.get('fetch_interval') as string) || 3600,
+      config: parsedConfig
     }
 
     try {
@@ -108,6 +135,7 @@ export default function DataSources() {
       setEditing(null)
       setSelectedPreset('')
       setSourceType('rss')
+      setConfigText(DEFAULT_WEB_LIST_CONFIG)
       const showToast = window.showToast
       if (showToast) {
         showToast(editing ? '数据源已更新' : '数据源已创建', 'success')
@@ -126,6 +154,8 @@ export default function DataSources() {
     setEditing(source)
     setSelectedPreset('')
     setSourceType(source.source_type)
+    const hasConfig = source.config && Object.keys(source.config).length > 0
+    setConfigText(hasConfig ? JSON.stringify(source.config, null, 2) : DEFAULT_WEB_LIST_CONFIG)
     setShowModal(true)
   }
 
@@ -144,9 +174,11 @@ export default function DataSources() {
         
         // 更新类型选择
         setSourceType(preset.type)
+        setConfigText(DEFAULT_WEB_LIST_CONFIG)
       }
     } else {
       setSourceType('rss')
+      setConfigText(DEFAULT_WEB_LIST_CONFIG)
     }
   }
 
@@ -170,6 +202,7 @@ export default function DataSources() {
         <button onClick={() => {
           setEditing(null)
           setSelectedPreset('')
+          setConfigText(DEFAULT_WEB_LIST_CONFIG)
           setShowModal(true)
         }}>添加数据源</button>
       </div>
@@ -333,12 +366,23 @@ export default function DataSources() {
                   placeholder="3600"
                 />
               </div>
+              <div className="form-group">
+                <label>配置（JSON，可选，用于网页列表/选择器等）</label>
+                <textarea
+                  name="config"
+                  rows={5}
+                  value={configText}
+                  onChange={(e) => setConfigText(e.target.value)}
+                  placeholder={`例如：\n{\n  "list_selector": ".news_list",\n  "link_selector": "a",\n  "max_links": 5,\n  "detail_config": {\n    "title_selector": "h1, title",\n    "content_selector": "article, .content, main, .post-content"\n  }\n}`}
+                />
+              </div>
               <div className="form-actions">
                 <button type="button" onClick={() => {
                   setShowModal(false)
                   setEditing(null)
                   setSelectedPreset('')
                   setSourceType('rss')
+                  setConfigText(DEFAULT_WEB_LIST_CONFIG)
                 }}>取消</button>
                 <button type="submit">{editing ? '更新' : '创建'}</button>
               </div>
