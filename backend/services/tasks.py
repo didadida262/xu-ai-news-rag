@@ -61,6 +61,11 @@ def fetch_all_data_sources():
         except Exception as e:
             logger.error(f"获取数据源失败: {e}")
             return {'status': 'error', 'message': str(e)}
+        finally:
+            # 显式关闭数据库连接，确保连接返回到连接池
+            from models.database import db
+            db.session.close()
+            db.engine.dispose()
 
 
 @celery.task(name='services.tasks.fetch_data_source', bind=True, max_retries=3)
@@ -223,6 +228,19 @@ def fetch_data_source(self, source_id: int):
             
             # 重试
             raise self.retry(exc=e, countdown=60 * (self.request.retries + 1))
+        finally:
+            # 显式关闭数据库连接，确保连接返回到连接池
+            # 这很重要，避免连接泄漏
+            try:
+                db.session.close()
+            except:
+                pass
+            try:
+                # 注意：不要dispose整个引擎，因为可能被其他任务使用
+                # 只关闭当前会话的连接
+                db.session.remove()
+            except:
+                pass
 
 
 @celery.task(name='services.tasks.fetch_with_agent')
@@ -284,3 +302,13 @@ def fetch_with_agent(url: str, query: str = None):
         except Exception as e:
             logger.error(f"智能代理抓取失败: {e}")
             return {'status': 'error', 'message': str(e)}
+        finally:
+            # 显式关闭数据库连接，确保连接返回到连接池
+            try:
+                db.session.close()
+            except:
+                pass
+            try:
+                db.session.remove()
+            except:
+                pass
