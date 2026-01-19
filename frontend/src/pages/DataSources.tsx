@@ -182,9 +182,11 @@ export default function DataSources() {
             </tr>
           </thead>
           <tbody>
-            {sources.map((source) => (
+            {sources.map((source) => {
+              const nameDisplay = source.name.length > 20 ? source.name.substring(0, 20) + '...' : source.name
+              return (
               <tr key={source.id}>
-                <td>{source.name}</td>
+                <td title={source.name}>{nameDisplay}</td>
                 <td>{source.source_type.toUpperCase()}</td>
                 <td className="url-cell">{source.url}</td>
                 <td>
@@ -226,7 +228,8 @@ export default function DataSources() {
                   </div>
                 </td>
               </tr>
-            ))}
+              )
+            })}
           </tbody>
         </table>
       </div>
