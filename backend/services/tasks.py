@@ -3,6 +3,7 @@ import sys
 import os
 from datetime import datetime
 import logging
+import threading
 
 # 添加项目路径
 backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -14,25 +15,41 @@ from services.fetchers import RSSFetcher, WebFetcher, AgentFetcher
 
 logger = logging.getLogger(__name__)
 
+# ========== 共享 Flask 应用实例（类似 HTTP keep-alive） ==========
+# 在 Celery Worker 启动时创建一次，所有任务共享使用
+# 避免每次任务都创建新的 Flask 应用和数据库连接池
+_flask_app = None
+_flask_app_lock = threading.Lock()
+
+def get_flask_app():
+    """获取共享的 Flask 应用实例（懒加载，线程安全）"""
+    global _flask_app
+    
+    if _flask_app is None:
+        with _flask_app_lock:
+            # 双重检查，避免多线程环境下重复创建
+            if _flask_app is None:
+                import importlib.util
+                # 动态导入app.py中的create_app
+                app_path = os.path.join(backend_dir, 'app.py')
+                spec = importlib.util.spec_from_file_location("app_module", app_path)
+                app_module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(app_module)
+                create_app = app_module.create_app
+                
+                _flask_app = create_app()
+                logger.info("✅ 创建共享 Flask 应用实例（类似 HTTP keep-alive）")
+    
+    return _flask_app
+
 
 @celery.task(name='services.tasks.fetch_all_data_sources')
 def fetch_all_data_sources():
     """定时任务：获取所有活跃的数据源"""
-    import sys
-    import os
-    import importlib.util
-    
-    # 动态导入app.py中的create_app
-    backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    app_path = os.path.join(backend_dir, 'app.py')
-    spec = importlib.util.spec_from_file_location("app_module", app_path)
-    app_module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(app_module)
-    create_app = app_module.create_app
-    
     from models.data_source import DataSource
     
-    app = create_app()
+    # 使用共享的 Flask 应用实例（类似 HTTP keep-alive）
+    app = get_flask_app()
     with app.app_context():
         try:
             sources = DataSource.get_active_sources()
@@ -62,32 +79,28 @@ def fetch_all_data_sources():
             logger.error(f"获取数据源失败: {e}")
             return {'status': 'error', 'message': str(e)}
         finally:
-            # 显式关闭数据库连接，确保连接返回到连接池
+            # 使用共享应用时，只需要关闭会话，不需要dispose引擎
+            # 因为引擎会被其他任务复用（类似 HTTP keep-alive）
             from models.database import db
-            db.session.close()
-            db.engine.dispose()
+            try:
+                db.session.close()
+            except:
+                pass
+            try:
+                db.session.remove()
+            except:
+                pass
 
 
 @celery.task(name='services.tasks.fetch_data_source', bind=True, max_retries=3)
 def fetch_data_source(self, source_id: int):
     """抓取单个数据源"""
-    import sys
-    import os
-    import importlib.util
-    
-    # 动态导入app.py中的create_app
-    backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    app_path = os.path.join(backend_dir, 'app.py')
-    spec = importlib.util.spec_from_file_location("app_module", app_path)
-    app_module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(app_module)
-    create_app = app_module.create_app
-    
     from models.data_source import DataSource
     from models.document import Document
     from models.database import db
     
-    app = create_app()
+    # 使用共享的 Flask 应用实例（类似 HTTP keep-alive）
+    app = get_flask_app()
     with app.app_context():
         try:
             source = DataSource.query.get(source_id)
@@ -246,23 +259,12 @@ def fetch_data_source(self, source_id: int):
 @celery.task(name='services.tasks.fetch_with_agent')
 def fetch_with_agent(url: str, query: str = None):
     """使用智能代理抓取指定URL"""
-    import sys
-    import os
-    import importlib.util
-    
-    # 动态导入app.py中的create_app
-    backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    app_path = os.path.join(backend_dir, 'app.py')
-    spec = importlib.util.spec_from_file_location("app_module", app_path)
-    app_module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(app_module)
-    create_app = app_module.create_app
-    
     from models.document import Document
     from models.database import db
     from config.config import config
     
-    app = create_app()
+    # 使用共享的 Flask 应用实例（类似 HTTP keep-alive）
+    app = get_flask_app()
     with app.app_context():
         try:
             config_name = os.environ.get('FLASK_ENV', 'development')
