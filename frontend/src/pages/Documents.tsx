@@ -342,6 +342,19 @@ export default function Documents() {
                 <div className="detail-value">{selectedDoc.title}</div>
               </div>
               <div className="detail-section">
+                <label>状态</label>
+                <div className="detail-value">
+                  {selectedDoc.is_processed && <span className="status-badge processed">已处理</span>}
+                  {selectedDoc.is_vectorized && <span className="status-badge vectorized">已向量化</span>}
+                </div>
+              </div>
+              <div className="detail-section">
+                <label>创建时间</label>
+                <div className="detail-value">
+                  {new Date(selectedDoc.created_at).toLocaleString()}
+                </div>
+              </div>
+              <div className="detail-section">
                 <label>来源</label>
                 <div className="detail-value">
                   {getSourceTypeLabel(selectedDoc.source_type)} - {selectedDoc.source_name || '-'}
@@ -377,19 +390,6 @@ export default function Documents() {
                   </div>
                 </div>
               )}
-              <div className="detail-section">
-                <label>状态</label>
-                <div className="detail-value">
-                  {selectedDoc.is_processed && <span className="status-badge processed">已处理</span>}
-                  {selectedDoc.is_vectorized && <span className="status-badge vectorized">已向量化</span>}
-                </div>
-              </div>
-              <div className="detail-section">
-                <label>创建时间</label>
-                <div className="detail-value">
-                  {new Date(selectedDoc.created_at).toLocaleString()}
-                </div>
-              </div>
             </div>
           </div>
         </div>
