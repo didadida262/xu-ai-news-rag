@@ -623,6 +623,71 @@
   background: linear-gradient(180deg, #764ba2 0%, #f093fb 100%);
 }
 
+/* 信息卡片容器 */
+.detail-card {
+  margin-bottom: 1.5rem;
+  padding: 1.25rem;
+  background: rgba(15, 20, 25, 0.4);
+  border-radius: 12px;
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.detail-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, #667eea 50%, transparent 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.detail-card:hover {
+  background: rgba(15, 20, 25, 0.6);
+  border-color: rgba(102, 126, 234, 0.4);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+}
+
+.detail-card:hover::before {
+  opacity: 1;
+}
+
+/* 卡片内的字段样式 */
+.detail-card .detail-section {
+  margin-bottom: 1rem;
+  padding: 0.75rem 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+  transition: none;
+  position: relative;
+  overflow: visible;
+}
+
+.detail-card .detail-section:last-child {
+  margin-bottom: 0;
+  border-bottom: none;
+}
+
+.detail-card .detail-section::before {
+  display: none;
+}
+
+.detail-card .detail-section:hover {
+  background: transparent;
+  border-color: rgba(102, 126, 234, 0.2);
+  transform: none;
+  box-shadow: none;
+}
+
+/* 独立的字段卡片（摘要、内容、标签） */
 .detail-section {
   margin-bottom: 1.5rem;
   padding: 1rem;
@@ -714,7 +779,7 @@
   padding: 1.25rem;
   background: linear-gradient(135deg, rgba(15, 20, 25, 0.8) 0%, rgba(20, 25, 35, 0.8) 100%);
   border-radius: 10px;
-  border: 1px solid rgba(102, 126, 234, 0.3);
+  border: none;
   box-shadow: 
     0 4px 16px rgba(0, 0, 0, 0.3) inset,
     0 0 20px rgba(102, 126, 234, 0.1);

@@ -337,39 +337,41 @@ export default function Documents() {
               <button className="modal-close" onClick={() => setShowDetail(false)}>×</button>
             </div>
             <div className="detail-content">
-              <div className="detail-section">
-                <label>标题</label>
-                <div className="detail-value">{selectedDoc.title}</div>
-              </div>
-              <div className="detail-section">
-                <label>状态</label>
-                <div className="detail-value">
-                  {selectedDoc.is_processed && <span className="status-badge processed">已处理</span>}
-                  {selectedDoc.is_vectorized && <span className="status-badge vectorized">已向量化</span>}
-                </div>
-              </div>
-              <div className="detail-section">
-                <label>创建时间</label>
-                <div className="detail-value">
-                  {new Date(selectedDoc.created_at).toLocaleString()}
-                </div>
-              </div>
-              <div className="detail-section">
-                <label>来源</label>
-                <div className="detail-value">
-                  {getSourceTypeLabel(selectedDoc.source_type)} - {selectedDoc.source_name || '-'}
-                </div>
-              </div>
-              {selectedDoc.source_url && (
+              <div className="detail-card">
                 <div className="detail-section">
-                  <label>来源URL</label>
+                  <label>标题</label>
+                  <div className="detail-value">{selectedDoc.title}</div>
+                </div>
+                <div className="detail-section">
+                  <label>状态</label>
                   <div className="detail-value">
-                    <a href={selectedDoc.source_url} target="_blank" rel="noopener noreferrer">
-                      {selectedDoc.source_url}
-                    </a>
+                    {selectedDoc.is_processed && <span className="status-badge processed">已处理</span>}
+                    {selectedDoc.is_vectorized && <span className="status-badge vectorized">已向量化</span>}
                   </div>
                 </div>
-              )}
+                <div className="detail-section">
+                  <label>创建时间</label>
+                  <div className="detail-value">
+                    {new Date(selectedDoc.created_at).toLocaleString()}
+                  </div>
+                </div>
+                <div className="detail-section">
+                  <label>来源</label>
+                  <div className="detail-value">
+                    {getSourceTypeLabel(selectedDoc.source_type)} - {selectedDoc.source_name || '-'}
+                  </div>
+                </div>
+                {selectedDoc.source_url && (
+                  <div className="detail-section">
+                    <label>来源URL</label>
+                    <div className="detail-value">
+                      <a href={selectedDoc.source_url} target="_blank" rel="noopener noreferrer">
+                        {selectedDoc.source_url}
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
               {selectedDoc.summary && (
                 <div className="detail-section">
                   <label>摘要</label>
