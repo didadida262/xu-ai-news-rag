@@ -16,11 +16,8 @@ declare global {
 
 // 预设数据源模板
 const PRESET_SOURCES = [
-  { name: '新浪新闻', type: 'rss' as const, url: 'http://rss.sina.com.cn/news/china.xml', description: '新浪新闻国内新闻RSS源' },
-  { name: '网易新闻', type: 'rss' as const, url: 'http://news.163.com/special/00011K6L/rss_newstop.xml', description: '网易新闻头条RSS源' },
-  { name: '腾讯新闻', type: 'rss' as const, url: 'http://news.qq.com/newsgn/rss_newsgn.xml', description: '腾讯新闻国内新闻RSS源' },
-  { name: '新华网', type: 'rss' as const, url: 'http://www.xinhuanet.com/rss.xml', description: '新华网RSS新闻源' },
-  { name: '人民网', type: 'rss' as const, url: 'http://www.people.com.cn/rss/politics.xml', description: '人民网时政新闻RSS源' },
+  { name: '人民网（RSS示例）', type: 'rss' as const, url: 'http://www.people.com.cn/rss/politics.xml', description: '人民网时政新闻RSS源' },
+  { name: '人民网首页（网页示例）', type: 'web' as const, url: 'https://www.people.com.cn/', description: '示例网页抓取：人民网首页要闻' }
 ]
 
 export default function DataSources() {
@@ -30,7 +27,6 @@ export default function DataSources() {
   const [editing, setEditing] = useState<DataSource | null>(null)
   const [selectedPreset, setSelectedPreset] = useState<string>('')
   const [sourceType, setSourceType] = useState<string>('rss')
-  const refreshIntervalsRef = useRef<Map<number, ReturnType<typeof setInterval>>>(new Map())
   const formRef = useRef<HTMLFormElement>(null)
 
   useEffect(() => {
@@ -47,119 +43,6 @@ export default function DataSources() {
       setLoading(false)
     }
   }
-
-  const handleFetch = async (id: number) => {
-    try {
-      // 清除该数据源之前的刷新定时器（如果存在）
-      const existingInterval = refreshIntervalsRef.current.get(id)
-      if (existingInterval) {
-        clearInterval(existingInterval)
-      }
-      
-      // 查找当前数据源
-      const currentSource = sources.find(s => s.id === id)
-      if (!currentSource) {
-        const showToast = window.showToast
-        if (showToast) {
-          showToast('数据源不存在', 'error')
-        }
-        return
-      }
-      
-      // 如果数据源未激活，先启用它
-      if (!currentSource.is_active) {
-        const showToast = window.showToast
-        if (showToast) {
-          showToast('数据源未激活，正在自动启用...', 'info', 2000)
-        }
-        
-        try {
-          await dataSourceService.update(id, { is_active: true })
-          if (showToast) {
-            showToast('数据源已启用', 'success', 2000)
-          }
-          // 刷新数据源列表
-          await loadSources()
-        } catch (error) {
-          const apiError = error as ApiError
-          const showToast = window.showToast
-          if (showToast) {
-            showToast(apiError.error || apiError.message || '启用失败', 'error')
-          }
-          return
-        }
-      }
-      
-      // 执行抓取
-      const showToast = window.showToast
-      if (showToast) {
-        showToast('正在启动抓取任务...', 'info', 2000)
-      }
-      
-      await dataSourceService.fetch(id)
-      
-      if (showToast) {
-        showToast('抓取任务已启动', 'success')
-      }
-      
-      // 记录当前抓取次数，用于检测数据是否已更新
-      const updatedSource = sources.find(s => s.id === id)
-      const initialFetchCount = updatedSource?.fetch_count || 0
-      const initialLastFetch = updatedSource?.last_fetch
-      
-      // 立即刷新一次
-      await loadSources()
-      
-      // 每2秒刷新一次，直到数据更新或达到最大刷新时间（60秒）
-      let refreshCount = 0
-      const maxRefreshes = 30 // 30次 × 2秒 = 60秒
-      
-      const interval = setInterval(async () => {
-        refreshCount++
-        await loadSources()
-        
-        // 检查数据是否已更新（抓取次数增加或最后抓取时间变化）
-        const updatedSources = await dataSourceService.list()
-        const updatedSource = updatedSources.find(s => s.id === id)
-        
-        if (updatedSource) {
-          const fetchCountUpdated = updatedSource.fetch_count > initialFetchCount
-          const lastFetchUpdated = updatedSource.last_fetch !== initialLastFetch
-          
-          if (fetchCountUpdated || lastFetchUpdated) {
-            // 数据已更新，停止刷新
-            clearInterval(interval)
-            refreshIntervalsRef.current.delete(id)
-            const showToast = window.showToast
-            if (showToast) {
-              showToast('抓取完成', 'success')
-            }
-          } else if (refreshCount >= maxRefreshes) {
-            // 达到最大刷新次数，停止刷新
-            clearInterval(interval)
-            refreshIntervalsRef.current.delete(id)
-          }
-        }
-      }, 2000)
-      
-      refreshIntervalsRef.current.set(id, interval)
-    } catch (error) {
-      const apiError = error as ApiError
-      const showToast = window.showToast
-      if (showToast) {
-        showToast(apiError.error || apiError.message || '启动失败', 'error')
-      }
-    }
-  }
-  
-  // 组件卸载时清除所有定时器
-  useEffect(() => {
-    const intervals = refreshIntervalsRef.current
-    return () => {
-      intervals.forEach(interval => clearInterval(interval))
-      intervals.clear()
-    }
-  }, [])
 
   const handleDelete = async (id: number) => {
     if (!confirm('确定要删除这个数据源吗？')) return
@@ -318,13 +201,6 @@ export default function DataSources() {
                 <td>{source.last_fetch ? new Date(source.last_fetch).toLocaleString() : '-'}</td>
                 <td>
                   <div className="actions">
-                    <button 
-                      className="btn-fetch" 
-                      onClick={() => handleFetch(source.id)}
-                      title="立即抓取该数据源的内容"
-                    >
-                      抓取
-                    </button>
                     <button 
                       className={`btn-edit ${source.is_active ? 'disabled' : ''}`}
                       onClick={() => !source.is_active && handleEdit(source)}

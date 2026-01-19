@@ -99,24 +99,17 @@ def create_default_data_sources():
     """创建默认数据源"""
     default_sources = [
         {
-            'name': '新浪新闻',
+            'name': '人民网（RSS示例）',
             'source_type': 'rss',
-            'url': 'http://rss.sina.com.cn/news/china/focus15.xml',
-            'description': '新浪新闻焦点RSS源',
+            'url': 'http://www.people.com.cn/rss/politics.xml',
+            'description': '人民网时政新闻RSS源',
             'fetch_interval': 3600
         },
         {
-            'name': '网易新闻',
-            'source_type': 'rss',
-            'url': 'http://news.163.com/special/00011K6L/rss_newstop.xml',
-            'description': '网易新闻头条RSS源',
-            'fetch_interval': 3600
-        },
-        {
-            'name': '腾讯新闻',
-            'source_type': 'rss',
-            'url': 'http://news.qq.com/newsgn/rss_newsgn.xml',
-            'description': '腾讯新闻国内RSS源',
+            'name': '人民网首页（网页示例）',
+            'source_type': 'web',
+            'url': 'https://www.people.com.cn/',
+            'description': '示例网页抓取：人民网首页要闻',
             'fetch_interval': 3600
         }
     ]

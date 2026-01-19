@@ -238,7 +238,7 @@ class TimeTrendAnalysis(Resource):
     @analysis_ns.doc(params={
         'start_date': '开始日期（YYYY-MM-DD）',
         'end_date': '结束日期（YYYY-MM-DD）',
-        'group_by': '分组方式（day/week/month，默认day）'
+        'group_by': '分组方式（hour/day/week/month，默认hour）'
     })
     @analysis_ns.marshal_list_with(time_trend_model)
     def get(self):
@@ -247,7 +247,7 @@ class TimeTrendAnalysis(Resource):
             # 获取查询参数
             start_date = request.args.get('start_date')
             end_date = request.args.get('end_date')
-            group_by = request.args.get('group_by', 'day')
+            group_by = request.args.get('group_by', 'hour')
             
             # 构建查询
             query = Document.query
@@ -260,8 +260,11 @@ class TimeTrendAnalysis(Resource):
                 except ValueError:
                     pass
             else:
-                # 默认最近30天
-                start = datetime.now() - timedelta(days=30)
+                # 默认最近24小时（按小时分组时）
+                if group_by == 'hour':
+                    start = datetime.now() - timedelta(hours=24)
+                else:
+                    start = datetime.now() - timedelta(days=30)
                 query = query.filter(Document.created_at >= start)
             
             if end_date:
@@ -273,14 +276,18 @@ class TimeTrendAnalysis(Resource):
                     pass
             
             # 根据分组方式提取日期部分
-            if group_by == 'day':
+            if group_by == 'hour':
+                # 按小时分组：YYYY-MM-DD HH:00
+                date_expr = func.date_format(Document.created_at, '%Y-%m-%d %H:00')
+            elif group_by == 'day':
                 date_expr = func.date(Document.created_at)
             elif group_by == 'week':
                 date_expr = func.date_format(Document.created_at, '%Y-%u')
             elif group_by == 'month':
                 date_expr = func.date_format(Document.created_at, '%Y-%m')
             else:
-                date_expr = func.date(Document.created_at)
+                # 默认按小时分组
+                date_expr = func.date_format(Document.created_at, '%Y-%m-%d %H:00')
             
             # 按日期分组统计
             results = db.session.query(
@@ -418,8 +425,8 @@ class AnalysisOverview(Resource):
                     'percentage': percentage
                 })
             
-            # 3. 时间趋势分析（按天）
-            date_expr = func.date(Document.created_at)
+            # 3. 时间趋势分析（按小时）
+            date_expr = func.date_format(Document.created_at, '%Y-%m-%d %H:00')
             time_query = db.session.query(
                 date_expr.label('date'),
                 func.count(Document.id).label('count')

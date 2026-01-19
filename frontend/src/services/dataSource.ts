@@ -51,10 +51,6 @@ export const dataSourceService = {
     return api.delete(`/data-sources/${id}`)
   },
 
-  fetch: async (id: number): Promise<{ message: string; task_id: string }> => {
-    return api.post(`/data-sources/${id}/fetch`)
-  },
-
   stats: async (): Promise<Record<string, unknown>> => {
     return api.get('/data-sources/stats')
   },

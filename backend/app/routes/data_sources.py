@@ -13,7 +13,6 @@ if backend_dir not in sys.path:
 from models.data_source import DataSource
 from models.user import User
 from models.database import db
-from services.tasks import fetch_data_source
 
 data_sources_ns = Namespace('data-sources', description='数据源管理相关操作')
 
@@ -154,26 +153,6 @@ class DataSourceDetail(Resource):
         except Exception as e:
             db.session.rollback()
             return {'error': f'删除失败: {str(e)}'}, 500
-
-
-@data_sources_ns.route('/<int:source_id>/fetch')
-class FetchDataSource(Resource):
-    @jwt_required()
-    def post(self, source_id):
-        """手动触发数据源抓取"""
-        source = DataSource.query.get_or_404(source_id)
-        
-        # 手动抓取时，允许抓取未激活的数据源（前端会自动启用）
-        # 如果数据源未激活，任务内部会处理
-        
-        # 异步执行抓取任务
-        task = fetch_data_source.delay(source_id)
-        
-        return {
-            'message': '抓取任务已启动',
-            'task_id': task.id,
-            'source_id': source_id
-        }, 202
 
 
 @data_sources_ns.route('/stats')

@@ -100,6 +100,20 @@ export default function Analysis() {
     { value: 'upload', label: '上传' }
   ]
 
+  // 深色系（与当前暗色主题搭配）的颜色配置
+  const darkColors = [
+    { bg: 'rgba(102, 126, 234, 0.65)', border: 'rgba(102, 126, 234, 1)' },  // 靛蓝
+    { bg: 'rgba(118, 75, 162, 0.65)', border: 'rgba(118, 75, 162, 1)' },    // 紫色
+    { bg: 'rgba(55, 178, 190, 0.65)', border: 'rgba(55, 178, 190, 1)' },    // 青色
+    { bg: 'rgba(84, 110, 122, 0.65)', border: 'rgba(84, 110, 122, 1)' },    // 石墨灰
+    { bg: 'rgba(64, 99, 164, 0.65)', border: 'rgba(64, 99, 164, 1)' },      // 深蓝
+    { bg: 'rgba(124, 92, 148, 0.65)', border: 'rgba(124, 92, 148, 1)' },    // 暮紫
+    { bg: 'rgba(66, 158, 166, 0.65)', border: 'rgba(66, 158, 166, 1)' },    // 海蓝
+    { bg: 'rgba(90, 103, 216, 0.65)', border: 'rgba(90, 103, 216, 1)' },    // 蓝紫
+    { bg: 'rgba(77, 124, 153, 0.65)', border: 'rgba(77, 124, 153, 1)' },    // 钢蓝
+    { bg: 'rgba(99, 102, 241, 0.65)', border: 'rgba(99, 102, 241, 1)' },    // 靛蓝亮
+  ]
+
   // 关键词柱状图数据
   const keywordsChartData = {
     labels: keywords.map(k => k.word),
@@ -107,8 +121,8 @@ export default function Analysis() {
       {
         label: '出现次数',
         data: keywords.map(k => k.count),
-        backgroundColor: 'rgba(102, 126, 234, 0.6)',
-        borderColor: 'rgba(102, 126, 234, 1)',
+        backgroundColor: keywords.map((_, index) => darkColors[index % darkColors.length].bg),
+        borderColor: keywords.map((_, index) => darkColors[index % darkColors.length].border),
         borderWidth: 1,
       },
     ],
@@ -145,9 +159,27 @@ export default function Analysis() {
     ],
   }
 
+  // 格式化时间标签为小时显示
+  const formatTimeLabel = (dateStr: string) => {
+    if (dateStr.includes(' ') && dateStr.includes(':')) {
+      // 如果是 "YYYY-MM-DD HH:00" 格式，显示为 "MM-DD HH:00"
+      const parts = dateStr.split(' ')
+      if (parts.length >= 2) {
+        const datePart = parts[0] // YYYY-MM-DD
+        const timePart = parts[1] // HH:00
+        const dateParts = datePart.split('-')
+        if (dateParts.length >= 3) {
+          return `${dateParts[1]}-${dateParts[2]} ${timePart}`
+        }
+        return timePart
+      }
+    }
+    return dateStr
+  }
+
   // 时间趋势折线图数据
   const timeTrendChartData = {
-    labels: timeTrend.map(t => t.date),
+    labels: timeTrend.map(t => formatTimeLabel(t.date)),
     datasets: [
       {
         label: '文档数量',
@@ -181,6 +213,8 @@ export default function Analysis() {
       x: {
         ticks: {
           color: '#a0a0a0',
+          maxRotation: 45,
+          minRotation: 45,
         },
         grid: {
           color: 'rgba(102, 126, 234, 0.1)',
