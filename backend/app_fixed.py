@@ -103,14 +103,14 @@ def create_default_data_sources():
             'source_type': 'rss',
             'url': 'http://www.people.com.cn/rss/politics.xml',
             'description': '人民网时政新闻RSS源',
-            'fetch_interval': 3600
+            'fetch_interval': 30
         },
         {
             'name': '人民网首页（网页示例）',
             'source_type': 'web',
             'url': 'https://www.people.com.cn/',
             'description': '示例网页抓取：人民网首页要闻',
-            'fetch_interval': 3600
+            'fetch_interval': 30
         }
     ]
     

@@ -31,6 +31,13 @@ export default function DataSources() {
 
   useEffect(() => {
     loadSources()
+    
+    // 定期刷新数据源列表（每5秒）
+    const interval = setInterval(() => {
+      loadSources()
+    }, 5000)
+    
+    return () => clearInterval(interval)
   }, [])
 
   const loadSources = async () => {

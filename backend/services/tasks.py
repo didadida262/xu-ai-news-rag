@@ -38,17 +38,25 @@ def fetch_all_data_sources():
             sources = DataSource.get_active_sources()
             logger.info(f"开始获取 {len(sources)} 个数据源")
             
+            queued_count = 0
+            skipped_count = 0
+            
             for source in sources:
                 # 检查是否需要抓取（基于fetch_interval）
                 if source.last_fetch:
                     time_since_last = (datetime.utcnow() - source.last_fetch).total_seconds()
                     if time_since_last < source.fetch_interval:
+                        logger.info(f"数据源 {source.name} (ID: {source.id}) 距离上次抓取仅 {time_since_last:.1f} 秒，小于间隔 {source.fetch_interval} 秒，跳过")
+                        skipped_count += 1
                         continue
                 
                 # 异步执行单个数据源抓取
+                logger.info(f"将数据源 {source.name} (ID: {source.id}, 类型: {source.source_type}) 加入抓取队列")
                 fetch_data_source.delay(source.id)
+                queued_count += 1
             
-            return {'status': 'success', 'sources_queued': len(sources)}
+            logger.info(f"抓取任务调度完成: 共 {len(sources)} 个活跃数据源，{queued_count} 个已加入队列，{skipped_count} 个因间隔未到跳过")
+            return {'status': 'success', 'sources_queued': queued_count, 'sources_skipped': skipped_count, 'total_active': len(sources)}
             
         except Exception as e:
             logger.error(f"获取数据源失败: {e}")
