@@ -10,6 +10,7 @@ import DataSources from './pages/DataSources'
 import Documents from './pages/Documents'
 import Query from './pages/Query'
 import Analysis from './pages/Analysis'
+import Architecture from './pages/Architecture'
 import './App.css'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -75,6 +76,7 @@ function AppContent() {
           <Route path="documents" element={<Documents />} />
           <Route path="query" element={<Query />} />
           <Route path="analysis" element={<Analysis />} />
+          <Route path="architecture" element={<Architecture />} />
         </Route>
       </Routes>
     </>

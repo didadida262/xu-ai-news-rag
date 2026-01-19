@@ -78,6 +78,9 @@ export default function Layout() {
           <Link to="/analysis" className={`nav-item ${isActive('/analysis') ? 'active' : ''}`}>
             数据分析
           </Link>
+          <Link to="/architecture" className={`nav-item ${isActive('/architecture') ? 'active' : ''}`}>
+            系统架构
+          </Link>
         </nav>
         <main className="main-content" style={{ position: 'relative' }}>
           {loading && <Loading />}
