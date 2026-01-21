@@ -59,12 +59,38 @@ export const documentService = {
     return api.get(`/documents/${id}`)
   },
 
+  update: async (id: number, data: Partial<Document>): Promise<Document> => {
+    return api.put(`/documents/${id}`, data)
+  },
+
   delete: async (id: number): Promise<void> => {
     return api.delete(`/documents/${id}`)
   },
 
   batchDelete: async (ids: number[]): Promise<{ message: string; deleted_count: number }> => {
     return api.post('/documents/batch-delete', { ids: ids.join(',') })
+  },
+
+  upload: async (file: File): Promise<Document> => {
+    const formData = new FormData()
+    formData.append('file', file)
+    
+    const token = localStorage.getItem('token')
+    const response = await fetch('/api/documents/upload', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    })
+    
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || '上传失败')
+    }
+    
+    const result = await response.json()
+    return result.document
   },
 
   stats: async (): Promise<any> => {

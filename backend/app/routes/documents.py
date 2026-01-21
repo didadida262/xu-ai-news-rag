@@ -1,9 +1,13 @@
-from flask import request
+from flask import request, current_app
 from flask_restx import Namespace, Resource, fields
 from flask_jwt_extended import jwt_required
 from datetime import datetime
+from werkzeug.utils import secure_filename
 import sys
 import os
+import json
+import pandas as pd
+from pathlib import Path
 
 # 添加项目路径
 backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -141,6 +145,35 @@ class DocumentDetail(Resource):
             return {'error': f'获取文档详情失败: {str(e)}'}, 500
     
     @jwt_required()
+    @documents_ns.expect(document_model)
+    @documents_ns.marshal_with(document_model)
+    def put(self, doc_id):
+        """更新文档元数据（标签、来源等）"""
+        try:
+            doc = Document.query.get_or_404(doc_id)
+            data = request.get_json()
+            
+            # 更新可编辑的字段
+            if 'tags' in data:
+                doc.tags = data['tags']
+            if 'source_name' in data:
+                doc.source_name = data['source_name']
+            if 'source_url' in data:
+                doc.source_url = data['source_url']
+            if 'title' in data:
+                doc.title = data['title']
+            if 'summary' in data:
+                doc.summary = data['summary']
+            
+            doc.updated_at = datetime.utcnow()
+            db.session.commit()
+            
+            return doc.to_dict_full(), 200
+        except Exception as e:
+            db.session.rollback()
+            return {'error': f'更新文档失败: {str(e)}'}, 500
+    
+    @jwt_required()
     def delete(self, doc_id):
         """删除文档"""
         try:
@@ -204,4 +237,129 @@ class DocumentStats(Resource):
             return stats, 200
         except Exception as e:
             return {'error': f'获取统计信息失败: {str(e)}'}, 500
+
+
+@documents_ns.route('/upload')
+class UploadDocument(Resource):
+    @jwt_required()
+    def post(self):
+        """上传文件到知识库（支持多种文件类型）"""
+        try:
+            if 'file' not in request.files:
+                return {'error': '未提供文件'}, 400
+            
+            file = request.files['file']
+            if file.filename == '':
+                return {'error': '文件名为空'}, 400
+            
+            # 获取上传配置
+            upload_folder = current_app.config.get('UPLOAD_FOLDER', './uploads')
+            os.makedirs(upload_folder, exist_ok=True)
+            
+            # 保存文件
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(upload_folder, filename)
+            file.save(file_path)
+            file_size = os.path.getsize(file_path)
+            
+            # 根据文件类型解析内容
+            file_ext = Path(filename).suffix.lower()
+            title = Path(filename).stem
+            content = ''
+            tags = []
+            
+            try:
+                if file_ext in ['.txt', '.md']:
+                    # 文本文件
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                
+                elif file_ext in ['.xlsx', '.xls']:
+                    # Excel文件
+                    df = pd.read_excel(file_path)
+                    # 将Excel转换为文本
+                    content = df.to_string(index=False)
+                    # 提取列名作为标签
+                    tags = list(df.columns) if len(df.columns) > 0 else []
+                
+                elif file_ext == '.csv':
+                    # CSV文件
+                    df = pd.read_csv(file_path, encoding='utf-8')
+                    content = df.to_string(index=False)
+                    tags = list(df.columns) if len(df.columns) > 0 else []
+                
+                elif file_ext == '.html':
+                    # HTML文件
+                    from bs4 import BeautifulSoup
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        soup = BeautifulSoup(f.read(), 'html.parser')
+                        # 提取文本内容
+                        for script in soup(['script', 'style']):
+                            script.decompose()
+                        content = soup.get_text(separator='\n', strip=True)
+                
+                elif file_ext == '.pdf':
+                    # PDF文件（需要安装PyPDF2或pdfplumber）
+                    try:
+                        import PyPDF2
+                        with open(file_path, 'rb') as f:
+                            pdf_reader = PyPDF2.PdfReader(f)
+                            content = '\n'.join([page.extract_text() for page in pdf_reader.pages])
+                    except ImportError:
+                        return {'error': 'PDF解析需要安装PyPDF2: pip install PyPDF2'}, 500
+                    except Exception as e:
+                        return {'error': f'PDF解析失败: {str(e)}'}, 500
+                
+                elif file_ext in ['.docx']:
+                    # Word文档（需要安装python-docx）
+                    try:
+                        from docx import Document as DocxDocument
+                        doc = DocxDocument(file_path)
+                        content = '\n'.join([para.text for para in doc.paragraphs])
+                    except ImportError:
+                        return {'error': 'Word文档解析需要安装python-docx: pip install python-docx'}, 500
+                    except Exception as e:
+                        return {'error': f'Word文档解析失败: {str(e)}'}, 500
+                
+                else:
+                    return {'error': f'不支持的文件类型: {file_ext}'}, 400
+                
+                # 生成摘要（取前200字符）
+                summary = content[:200] + '...' if len(content) > 200 else content
+                
+                # 创建文档记录
+                doc = Document(
+                    title=title,
+                    content=content,
+                    summary=summary,
+                    source_type='web',  # 上传的文件标记为web类型
+                    source_name='文件上传',
+                    source_url=f'file://{file_path}',
+                    tags=tags,
+                    file_path=file_path,
+                    file_size=file_size,
+                    extra_metadata={
+                        'original_filename': filename,
+                        'file_type': file_ext,
+                        'uploaded_at': datetime.utcnow().isoformat()
+                    }
+                )
+                
+                db.session.add(doc)
+                db.session.commit()
+                
+                return {
+                    'message': '文件上传成功',
+                    'document': doc.to_dict_full()
+                }, 201
+                
+            except Exception as e:
+                # 如果解析失败，删除已保存的文件
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+                return {'error': f'文件解析失败: {str(e)}'}, 500
+                
+        except Exception as e:
+            db.session.rollback()
+            return {'error': f'上传失败: {str(e)}'}, 500
 
