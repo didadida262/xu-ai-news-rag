@@ -3,7 +3,7 @@ import api from './api'
 export interface DataSource {
   id: number
   name: string
-  source_type: 'rss' | 'web' | 'api'
+  source_type: 'rss' | 'web'
   url: string
   description?: string
   is_active: boolean
@@ -18,7 +18,7 @@ export interface DataSource {
 
 export interface CreateDataSource {
   name: string
-  source_type: 'rss' | 'web' | 'api'
+  source_type: 'rss' | 'web'
   url: string
   description?: string
   fetch_interval?: number

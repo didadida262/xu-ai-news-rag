@@ -88,7 +88,7 @@ class KeywordsAnalysis(Resource):
     @analysis_ns.doc(params={
         'start_date': '开始日期（YYYY-MM-DD）',
         'end_date': '结束日期（YYYY-MM-DD）',
-        'source_type': '来源类型筛选（rss/web/api/upload）',
+        'source_type': '来源类型筛选（rss/web）',
         'top_k': '返回关键词数量（默认10）'
     })
     @analysis_ns.marshal_list_with(keyword_model)
@@ -333,7 +333,7 @@ class AnalysisOverview(Resource):
     @analysis_ns.doc(params={
         'start_date': '开始日期（YYYY-MM-DD）',
         'end_date': '结束日期（YYYY-MM-DD）',
-        'source_type': '来源类型筛选（rss/web/api/upload）',
+        'source_type': '来源类型筛选（rss/web）',
         'top_k': '返回关键词数量（默认10）'
     })
     @analysis_ns.marshal_with(analysis_result_model)

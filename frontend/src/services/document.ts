@@ -5,7 +5,7 @@ export interface Document {
   title: string
   content: string
   summary?: string
-  source_type: 'rss' | 'web' | 'api' | 'upload'
+  source_type: 'rss' | 'web'
   source_url?: string
   source_name?: string
   tags?: string[]

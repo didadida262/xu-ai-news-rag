@@ -31,7 +31,7 @@ export interface AnalysisOverview {
 export interface AnalysisParams {
   start_date?: string
   end_date?: string
-  source_type?: 'rss' | 'web' | 'api' | 'upload'
+  source_type?: 'rss' | 'web'
   top_k?: number
   group_by?: 'day' | 'week' | 'month'
 }

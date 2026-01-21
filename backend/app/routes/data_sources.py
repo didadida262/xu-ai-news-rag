@@ -20,7 +20,7 @@ data_sources_ns = Namespace('data-sources', description='数据源管理相关�
 data_source_model = data_sources_ns.model('DataSource', {
     'id': fields.Integer(description='数据源ID'),
     'name': fields.String(description='数据源名称'),
-    'source_type': fields.String(description='数据源类型: rss/web/api'),
+    'source_type': fields.String(description='数据源类型: rss/web'),
     'url': fields.String(description='数据源URL'),
     'description': fields.String(description='描述'),
     'is_active': fields.Boolean(description='是否激活'),
@@ -64,8 +64,8 @@ class DataSourcesList(Resource):
             return {'error': '名称、URL和类型为必填项'}, 400
         
         # 验证类型
-        if data['source_type'] not in ['rss', 'web', 'api']:
-            return {'error': '数据源类型必须是: rss, web, api'}, 400
+        if data['source_type'] not in ['rss', 'web']:
+            return {'error': '数据源类型必须是: rss, web'}, 400
         
         # 检查URL是否已存在
         existing = DataSource.query.filter_by(url=data['url']).first()

@@ -175,9 +175,7 @@ export default function Documents() {
   const getSourceTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
       rss: 'RSS',
-      web: '网页',
-      api: 'API',
-      upload: '上传'
+      web: '网页'
     }
     return labels[type] || type.toUpperCase()
   }
@@ -186,9 +184,7 @@ export default function Documents() {
   const sourceTypeOptions: SelectOption[] = [
     { value: '', label: '全部类型' },
     { value: 'rss', label: 'RSS' },
-    { value: 'web', label: '网页' },
-    { value: 'api', label: 'API' },
-    { value: 'upload', label: '上传' }
+    { value: 'web', label: '网页' }
   ]
 
   const processStatusOptions: SelectOption[] = [

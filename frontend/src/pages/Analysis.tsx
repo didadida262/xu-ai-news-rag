@@ -95,9 +95,7 @@ export default function Analysis() {
   const sourceTypeOptions: SelectOption[] = [
     { value: '', label: '全部' },
     { value: 'rss', label: 'RSS' },
-    { value: 'web', label: '网页' },
-    { value: 'api', label: 'API' },
-    { value: 'upload', label: '上传' }
+    { value: 'web', label: '网页' }
   ]
 
   // 深色系（与当前暗色主题搭配）的颜色配置
@@ -134,8 +132,6 @@ export default function Analysis() {
       const labels: Record<string, string> = {
         rss: 'RSS',
         web: '网页',
-        api: 'API',
-        upload: '上传',
       }
       return `${labels[s.source_type] || s.source_type} (${s.count})`
     }),

@@ -21,7 +21,7 @@ document_model = documents_ns.model('Document', {
     'title': fields.String(description='标题'),
     'content': fields.String(description='内容（摘要）'),
     'summary': fields.String(description='摘要'),
-    'source_type': fields.String(description='来源类型: rss/web/api/upload'),
+    'source_type': fields.String(description='来源类型: rss/web'),
     'source_url': fields.String(description='来源URL'),
     'source_name': fields.String(description='来源名称'),
     'tags': fields.List(fields.String, description='标签'),
@@ -38,7 +38,7 @@ class DocumentsList(Resource):
     @documents_ns.doc(params={
         'page': '页码（默认1）',
         'per_page': '每页数量（默认20）',
-        'source_type': '来源类型筛选（rss/web/api/upload）',
+        'source_type': '来源类型筛选（rss/web）',
         'search': '搜索关键词（标题或内容）',
         'start_date': '开始日期（YYYY-MM-DD）',
         'end_date': '结束日期（YYYY-MM-DD）',

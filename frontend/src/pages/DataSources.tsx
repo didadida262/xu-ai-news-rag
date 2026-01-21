@@ -118,7 +118,7 @@ export default function DataSources() {
 
     const data = {
       name: formData.get('name') as string,
-      source_type: (formData.get('source_type') as 'rss' | 'web' | 'api') || sourceType as 'rss' | 'web' | 'api',
+      source_type: (formData.get('source_type') as 'rss' | 'web') || sourceType as 'rss' | 'web',
       url: formData.get('url') as string,
       description: formData.get('description') as string || '',
       fetch_interval: parseInt(formData.get('fetch_interval') as string) || 3600,
@@ -329,8 +329,7 @@ export default function DataSources() {
                   onChange={handleSourceTypeChange}
                   options={[
                     { value: 'rss', label: 'RSS' },
-                    { value: 'web', label: '网页' },
-                    { value: 'api', label: 'API（智能代理）' }
+                    { value: 'web', label: '网页' }
                   ]}
                   placeholder="请选择类型"
                   className="source-type-select"
