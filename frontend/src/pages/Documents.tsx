@@ -228,7 +228,7 @@ export default function Documents() {
 
     // 验证文件类型
     const allowedTypes = ['.txt', '.md', '.pdf', '.docx', '.xlsx', '.xls', '.csv', '.html']
-    const fileExt = '.' + file.name.split('.').pop()?.toLowerCase()
+    const fileExt = '.' + (file.name.split('.').pop()?.trim().toLowerCase() || '')
     if (!allowedTypes.includes(fileExt)) {
       const showToast = window.showToast
       if (showToast) {
