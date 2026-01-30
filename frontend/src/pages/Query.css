@@ -188,3 +188,13 @@
   color: #a0a0a0;
   padding: 2rem 1rem;
 }
+
+.error {
+  text-align: center;
+  color: #e74c3c;
+  padding: 2rem 1rem;
+  background: rgba(231, 76, 60, 0.1);
+  border: 1px solid rgba(231, 76, 60, 0.3);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}

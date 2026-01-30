@@ -53,10 +53,16 @@ class SemanticQuery(Resource):
 
             # 获取最近的部分文档，减少计算量（可视情况调整）
             candidate_docs = Document.query.order_by(Document.created_at.desc()).limit(300).all()
+            logger = logging.getLogger(__name__)
+            logger.info(f"找到 {len(candidate_docs)} 个候选文档")
+            
             if not candidate_docs:
+                logger.warning("没有找到任何文档，请先添加文档到知识库")
                 return [], 200
 
+            logger.info("开始加载嵌入模型...")
             model = get_embedding_model()
+            logger.info("嵌入模型加载成功")
 
             # 编码查询和文档
             query_emb = model.encode(query_text, convert_to_tensor=True)

@@ -12,6 +12,7 @@ export default function Query() {
   const [topK, setTopK] = useState(5)
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState<SemanticQueryResult[]>([])
+  const [error, setError] = useState('')
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -22,14 +23,23 @@ export default function Query() {
     }
     try {
       setLoading(true)
+      setError('')
+      setResults([])
       const data = await queryService.semantic(query.trim(), topK)
-      setResults(data)
+      setResults(data || [])
+      if (!data || data.length === 0) {
+        setError('未找到相关文档，请尝试其他关键词')
+      }
     } catch (error) {
       const apiError = error as ApiError
+      const errorMsg = apiError.error || apiError.message || '查询失败'
+      setError(errorMsg)
+      setResults([])
       const showToast = window.showToast
       if (showToast) {
-        showToast(apiError.error || apiError.message || '查询失败', 'error')
+        showToast(errorMsg, 'error')
       }
+      console.error('语义查询错误:', error)
     } finally {
       setLoading(false)
     }
@@ -68,10 +78,13 @@ export default function Query() {
 
       <div className="query-results">
         {loading && <div className="loading">查询中...</div>}
-        {!loading && results.length === 0 && (
+        {!loading && error && (
+          <div className="error">{error}</div>
+        )}
+        {!loading && !error && results.length === 0 && (
           <div className="empty">暂无结果</div>
         )}
-        {!loading && results.length > 0 && (
+        {!loading && !error && results.length > 0 && (
           <div className="result-list">
             {results.map((item) => (
               <div key={item.id} className="result-card">
