@@ -32,7 +32,15 @@ export default function Query() {
       }
     } catch (error) {
       const apiError = error as ApiError
-      const errorMsg = apiError.error || apiError.message || '查询失败'
+      let errorMsg = apiError.error || apiError.message || '查询失败'
+      
+      // 如果是超时错误，提供更友好的提示
+      if (errorMsg.includes('timeout') || errorMsg.includes('超时')) {
+        errorMsg = '查询超时。首次使用需要下载模型文件（约80MB），可能需要较长时间。请检查网络连接后重试。'
+      } else if (errorMsg.includes('Failed to establish') || errorMsg.includes('连接')) {
+        errorMsg = '无法连接到模型服务器。请检查网络连接，或联系管理员预先下载模型文件。'
+      }
+      
       setError(errorMsg)
       setResults([])
       const showToast = window.showToast

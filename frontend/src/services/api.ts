@@ -2,7 +2,7 @@ import axios from 'axios'
 
 const api = axios.create({
   baseURL: '/api',
-  timeout: 30000,
+  timeout: 120000, // 增加到120秒，因为首次加载模型需要下载
   headers: {
     'Content-Type': 'application/json',
   },

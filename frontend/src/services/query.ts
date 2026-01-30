@@ -12,6 +12,7 @@ export interface SemanticQueryResult {
 
 export const queryService = {
   semantic: async (query: string, top_k: number = 5): Promise<SemanticQueryResult[]> => {
-    return api.post('/query/semantic', { query, top_k })
+    // 语义查询可能需要更长时间（首次加载模型），使用更长的超时时间
+    return api.post('/query/semantic', { query, top_k }, { timeout: 120000 })
   }
 }
