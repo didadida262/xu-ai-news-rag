@@ -102,23 +102,66 @@ class SemanticQuery(Resource):
             model = get_embedding_model()
 
             # 编码查询和文档
-            query_emb = model.encode(query_text, convert_to_tensor=True)
+            logger.info(f"编码查询文本: '{query_text}'")
+            query_emb = model.encode(query_text, convert_to_tensor=True, show_progress_bar=False)
+            
             doc_texts = []
             doc_refs = []
             for doc in candidate_docs:
-                text_parts = [doc.title or '', doc.summary or '', doc.content or '']
-                doc_texts.append('\n'.join(text_parts)[:2000])  # 截断以减少计算量
+                # 构建文档文本用于向量化
+                # 策略：标题 + 摘要（如果有）+ 内容开头部分
+                text_parts = []
+                
+                # 1. 标题（最重要，通常包含关键信息）
+                if doc.title:
+                    text_parts.append(doc.title)
+                
+                # 2. 摘要（如果有，通常包含关键信息）
+                if doc.summary:
+                    text_parts.append(doc.summary)
+                
+                # 3. 内容开头部分（保留更多上下文）
+                if doc.content:
+                    # 如果已经有摘要，内容可以短一些；如果没有摘要，保留更多内容
+                    content_length = 1000 if doc.summary else 2000
+                    content_preview = doc.content[:content_length]
+                    text_parts.append(content_preview)
+                
+                doc_text = '\n'.join(text_parts)
+                doc_texts.append(doc_text)
                 doc_refs.append(doc)
 
-            doc_embs = model.encode(doc_texts, convert_to_tensor=True)
+            logger.info(f"开始编码 {len(doc_texts)} 个文档...")
+            doc_embs = model.encode(doc_texts, convert_to_tensor=True, show_progress_bar=False, batch_size=32)
 
             # 相似度计算
             scores = util.cos_sim(query_emb, doc_embs)[0]
             scored = [(float(scores[i]), doc_refs[i]) for i in range(len(doc_refs))]
             scored.sort(key=lambda x: x[0], reverse=True)
 
+            # 设置相似度阈值，过滤掉相关性太低的文档
+            # 从配置中读取阈值，如果没有则使用默认值
+            try:
+                similarity_threshold = current_app.config.get('SIMILARITY_THRESHOLD', 0.3)
+            except:
+                similarity_threshold = float(os.environ.get('SIMILARITY_THRESHOLD', '0.3'))
+            
+            # 如果最高相似度都很低，说明可能没有相关文档，降低阈值
+            max_score = scored[0][0] if scored else 0
+            if max_score < 0.5:
+                # 如果最高相似度都低于0.5，说明可能没有真正相关的文档
+                # 但仍然返回结果，但降低阈值到0.2
+                similarity_threshold = min(similarity_threshold, 0.2)
+                logger.warning(f"最高相似度较低 ({max_score:.4f})，降低阈值到 {similarity_threshold}")
+            
+            filtered_scored = [(score, doc) for score, doc in scored if score >= similarity_threshold]
+            
+            if not filtered_scored:
+                logger.warning(f"没有找到相似度 >= {similarity_threshold} 的文档，返回前 {top_k} 个结果（即使相似度较低）")
+                filtered_scored = scored[:top_k]
+
             results = []
-            for score, doc in scored[:top_k]:
+            for score, doc in filtered_scored[:top_k]:
                 results.append({
                     'id': doc.id,
                     'title': doc.title,
@@ -129,9 +172,13 @@ class SemanticQuery(Resource):
                     'created_at': doc.created_at.isoformat() + 'Z' if doc.created_at else None
                 })
 
-            # 记录日志
-            logger = logging.getLogger(__name__)
-            logger.info(f"语义查询: query='{query_text[:100]}', top_k={top_k}, candidates={len(candidate_docs)}")
+            # 记录详细日志
+            logger.info(f"语义查询完成: query='{query_text[:100]}', top_k={top_k}, candidates={len(candidate_docs)}")
+            if results:
+                logger.info(f"返回结果数: {len(results)}, 最高相似度: {results[0]['score']:.4f}, 最低相似度: {results[-1]['score']:.4f}")
+                logger.info(f"前3个结果标题: {[r['title'][:30] for r in results[:3]]}")
+            else:
+                logger.warning("未找到相关文档")
 
             return results, 200
 
