@@ -461,8 +461,7 @@ export default function Documents() {
                     {doc.title}
                   </h3>
                   <div className="document-meta">
-                    <span className="source-type">{getSourceTypeLabel(doc.source_type)}</span>
-                    <span className="source-name">{doc.source_name || '-'}</span>
+                    <span className="source-type">{doc.source_name || '-'}</span>
                     <span className="created-time">
                       {new Date(doc.created_at).toLocaleString()}
                     </span>
