@@ -1,8 +1,9 @@
 from flask_restx import Namespace, Resource, fields
 from flask_jwt_extended import jwt_required
-from flask import request
+from flask import request, current_app
 from datetime import datetime
 import logging
+import os
 
 # 依赖：sentence-transformers 已在 requirements.txt 中安装
 from sentence_transformers import SentenceTransformer, util
@@ -13,8 +14,46 @@ _embedding_model = None
 def get_embedding_model():
     global _embedding_model
     if _embedding_model is None:
-        # 与需求中配置一致：all-MiniLM-L6-v2
-        _embedding_model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+        logger = logging.getLogger(__name__)
+        try:
+            # 优先使用本地模型路径
+            model_path = None
+            model_name = 'sentence-transformers/all-MiniLM-L6-v2'
+            
+            # 尝试从 Flask app context 获取配置
+            try:
+                from flask import has_app_context
+                if has_app_context():
+                    model_path = current_app.config.get('EMBEDDING_MODEL_PATH')
+                    model_name = current_app.config.get('EMBEDDING_MODEL', model_name)
+            except:
+                pass
+            
+            # 如果不在 app context 中或配置为空，从环境变量读取
+            if not model_path:
+                model_path = os.environ.get('EMBEDDING_MODEL_PATH')
+            if model_name == 'sentence-transformers/all-MiniLM-L6-v2':
+                model_name = os.environ.get('EMBEDDING_MODEL', model_name)
+            
+            if model_path and os.path.exists(model_path):
+                logger.info(f"从本地路径加载模型: {os.path.abspath(model_path)}")
+                _embedding_model = SentenceTransformer(model_path)
+                logger.info("✅ 本地模型加载成功")
+            else:
+                logger.info(f"从 Hugging Face 加载模型: {model_name}")
+                if not model_path:
+                    logger.info("提示：可以预先下载模型到本地，设置 EMBEDDING_MODEL_PATH 环境变量")
+                    logger.info("运行: python backend/download_model.py")
+                _embedding_model = SentenceTransformer(model_name)
+                logger.info("✅ 模型加载成功")
+        except Exception as e:
+            logger.error(f"❌ 加载嵌入模型失败: {e}")
+            logger.error("")
+            logger.error("解决方案：")
+            logger.error("1. 预先下载模型: python backend/download_model.py")
+            logger.error("2. 设置环境变量: EMBEDDING_MODEL_PATH=./models/sentence-transformers_all-MiniLM-L6-v2")
+            logger.error("3. 或检查网络连接，确保可以访问 Hugging Face")
+            raise
     return _embedding_model
 
 query_ns = Namespace('query', description='查询相关操作')
@@ -60,9 +99,7 @@ class SemanticQuery(Resource):
                 logger.warning("没有找到任何文档，请先添加文档到知识库")
                 return [], 200
 
-            logger.info("开始加载嵌入模型...")
             model = get_embedding_model()
-            logger.info("嵌入模型加载成功")
 
             # 编码查询和文档
             query_emb = model.encode(query_text, convert_to_tensor=True)

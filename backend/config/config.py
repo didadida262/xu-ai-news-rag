@@ -38,7 +38,9 @@ class Config:
     # AI模型配置
     OLLAMA_BASE_URL = os.environ.get('OLLAMA_BASE_URL') or 'http://localhost:11434'
     OLLAMA_MODEL = os.environ.get('OLLAMA_MODEL') or 'qwen2.5:3b'
-    EMBEDDING_MODEL = os.environ.get('EMBEDDING_MODEL') or 'all-MiniLM-L6-v2'
+    EMBEDDING_MODEL = os.environ.get('EMBEDDING_MODEL') or 'sentence-transformers/all-MiniLM-L6-v2'
+    # 本地模型路径（如果设置了，将优先使用本地模型）
+    EMBEDDING_MODEL_PATH = os.environ.get('EMBEDDING_MODEL_PATH')
     RERANK_MODEL = os.environ.get('RERANK_MODEL') or 'ms-marco-MiniLM-L-6-v2'
     
     # FAISS配置
