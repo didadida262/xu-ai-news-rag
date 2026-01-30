@@ -1,10 +1,99 @@
+import { useState } from 'react'
+import { queryService, SemanticQueryResult } from '../services/query'
 import './Query.css'
 
+interface ApiError {
+  error?: string
+  message?: string
+}
+
 export default function Query() {
+  const [query, setQuery] = useState('')
+  const [topK, setTopK] = useState(5)
+  const [loading, setLoading] = useState(false)
+  const [results, setResults] = useState<SemanticQueryResult[]>([])
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!query.trim()) {
+      const showToast = window.showToast
+      if (showToast) showToast('请输入查询内容', 'warning')
+      return
+    }
+    try {
+      setLoading(true)
+      const data = await queryService.semantic(query.trim(), topK)
+      setResults(data)
+    } catch (error) {
+      const apiError = error as ApiError
+      const showToast = window.showToast
+      if (showToast) {
+        showToast(apiError.error || apiError.message || '查询失败', 'error')
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="query">
-      <h1>语义查询</h1>
-      <p>功能开发中...</p>
+      <div className="query-header">
+        <h1>语义查询</h1>
+        <p>基于向量相似度的智能检索，返回最相关的知识库文档。</p>
+      </div>
+
+      <form className="query-form" onSubmit={handleSearch}>
+        <textarea
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="请输入查询问题，例如：四川高县红星村的扶贫进展？"
+          rows={3}
+        />
+        <div className="query-actions">
+          <div className="topk-control">
+            <label>返回条数</label>
+            <input
+              type="number"
+              min={1}
+              max={20}
+              value={topK}
+              onChange={(e) => setTopK(Math.max(1, Math.min(20, Number(e.target.value))))}
+            />
+          </div>
+          <button type="submit" disabled={loading}>
+            {loading ? '查询中...' : '查询'}
+          </button>
+        </div>
+      </form>
+
+      <div className="query-results">
+        {loading && <div className="loading">查询中...</div>}
+        {!loading && results.length === 0 && (
+          <div className="empty">暂无结果</div>
+        )}
+        {!loading && results.length > 0 && (
+          <div className="result-list">
+            {results.map((item) => (
+              <div key={item.id} className="result-card">
+                <div className="result-header">
+                  <div className="result-title">{item.title || '未命名'}</div>
+                  <div className="result-meta">
+                    <span className="source-type">{item.source_type.toUpperCase()}</span>
+                    <span className="source-name">{item.source_name || '-'}</span>
+                    <span className="score">相似度 {item.score.toFixed(4)}</span>
+                  </div>
+                </div>
+                <div className="result-summary">
+                  {item.summary || '暂无摘要'}
+                </div>
+                <div className="result-footer">
+                  <span>{item.created_at ? new Date(item.created_at).toLocaleString() : '-'}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

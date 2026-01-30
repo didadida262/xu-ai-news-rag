@@ -40,6 +40,24 @@
   align-items: center;
   gap: 0.75rem;
 }
+.btn-batch-delete-mode {
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, rgba(231, 76, 60, 0.25) 0%, rgba(192, 57, 43, 0.25) 100%);
+  color: #e74c3c;
+  border: 1px solid rgba(231, 76, 60, 0.4);
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  transition: all 0.3s ease;
+}
+
+.btn-batch-delete-mode:hover {
+  background: linear-gradient(135deg, rgba(231, 76, 60, 0.35) 0%, rgba(192, 57, 43, 0.35) 100%);
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.35);
+  transform: translateY(-2px);
+}
+
 .btn-batch-delete {
   padding: 0.5rem 1rem;
   background: linear-gradient(135deg, rgba(231, 76, 60, 0.25) 0%, rgba(192, 57, 43, 0.25) 100%);

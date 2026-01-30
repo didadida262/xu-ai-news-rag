@@ -34,6 +34,7 @@ export default function Documents() {
     source_url: ''
   })
   const [uploading, setUploading] = useState(false)
+  const [showBatchDelete, setShowBatchDelete] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const previousTotalRef = useRef<number>(0)
 
@@ -355,13 +356,25 @@ export default function Documents() {
           >
             {uploading ? '上传中...' : '上传文件'}
           </button>
-          {selectedIds.length > 0 && (
+          <button
+            onClick={() => {
+              setShowBatchDelete(!showBatchDelete)
+              if (showBatchDelete) {
+                setSelectedIds([]) // 关闭时清空选择
+              }
+            }}
+            className="btn-batch-delete-mode"
+            title={showBatchDelete ? '退出批量删除模式' : '进入批量删除模式'}
+          >
+            {showBatchDelete ? '取消批量删除' : '批量删除'}
+          </button>
+          {showBatchDelete && selectedIds.length > 0 && (
             <button
               onClick={handleBatchDeleteSelected}
               className="btn-batch-delete"
               title={`删除选中的 ${selectedIds.length} 个文档`}
             >
-              删除选中
+              删除选中 ({selectedIds.length})
             </button>
           )}
           {pagination.total > 0 && (
@@ -419,27 +432,31 @@ export default function Documents() {
         <div className="empty">暂无文档</div>
       ) : (
         <>
-          <div className="select-all-row">
-            <label className="select-all-label">
-              <input
-                type="checkbox"
-                checked={selectedIds.length === documents.length && documents.length > 0}
-                onChange={handleToggleSelectAll}
-              />
-              全选
-            </label>
-          </div>
+          {showBatchDelete && (
+            <div className="select-all-row">
+              <label className="select-all-label">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.length === documents.length && documents.length > 0}
+                  onChange={handleToggleSelectAll}
+                />
+                全选
+              </label>
+            </div>
+          )}
           <div className="documents-list">
             {documents.map((doc) => (
               <div key={doc.id} className="document-card">
                 <div className="document-header">
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.includes(doc.id)}
-                    onChange={() => handleToggleSelectOne(doc.id)}
-                    className="doc-checkbox"
-                    title="选择文档"
-                  />
+                  {showBatchDelete && (
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(doc.id)}
+                      onChange={() => handleToggleSelectOne(doc.id)}
+                      className="doc-checkbox"
+                      title="选择文档"
+                    />
+                  )}
                   <h3 className="document-title" onClick={() => handleViewDetail(doc.id)}>
                     {doc.title}
                   </h3>
