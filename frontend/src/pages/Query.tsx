@@ -60,6 +60,9 @@ export default function Query() {
           rows={3}
         />
         <div className="query-actions">
+          <button type="submit" disabled={loading}>
+            {loading ? '查询中...' : '查询'}
+          </button>
           <div className="topk-control">
             <label>返回条数</label>
             <input
@@ -70,9 +73,6 @@ export default function Query() {
               onChange={(e) => setTopK(Math.max(1, Math.min(20, Number(e.target.value))))}
             />
           </div>
-          <button type="submit" disabled={loading}>
-            {loading ? '查询中...' : '查询'}
-          </button>
         </div>
       </form>
 

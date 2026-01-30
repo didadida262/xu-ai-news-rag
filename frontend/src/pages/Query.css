@@ -63,8 +63,9 @@
 .query-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 1rem;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .topk-control {
@@ -73,6 +74,12 @@
   gap: 0.5rem;
   color: #cfd8ff;
   font-weight: 600;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+.topk-control label {
+  white-space: nowrap;
 }
 
 .topk-control input {
